@@ -14,7 +14,7 @@
 }
 .dark{
   --bg:#111110;--sf:#1A1A18;--sf1:#242422;--sf2:#2E2E2C;
-  --bd:#2E2E2C;--t1:#F5F5F4;--t2:#A8A29E;--t3:#57534E;
+  --bd:#2E2E2C;--t1:#F5F5F4;--t2:#B8B2AC;--t3:#8B857F;
   --pl:#2A1A14;--pd:#F0A07A;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -59,10 +59,10 @@ select{height:32px;font-size:12px;padding:0 10px;border:0.5px solid var(--bd);bo
   display:flex;flex-direction:column;gap:2px;
 }
 .sb-item:last-child{border-right:none;}
-.sb-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;}
+.sb-lbl{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
 .sb-val{font-size:18px;font-weight:700;color:var(--t1);}
 .sb-val.p{color:var(--p);}
-.sb-sub{font-size:10px;color:var(--t3);}
+.sb-sub{font-size:11px;color:var(--t2);}
 
 /* ── 섹션 구분 ── */
 .sec{margin-top:28px;display:flex;flex-direction:column;gap:14px;}
@@ -413,10 +413,20 @@ tr:hover td{background:var(--sf1);}
         </div>
       </div>
 
-      <!-- 도넛 2개 -->
-      <div class="g2">
+      <!-- 집행 매출 추이 (인식기준) -->
+      <div class="card">
+        <div class="ch"><span class="ct">집행 매출 추이</span><span class="cs" id="execTrendSub">월별 인식매출 · 단위 만원</span></div>
+        <div class="cb"><div class="chart-wrap h200"><canvas id="execC"></canvas></div></div>
+      </div>
+
+      <!-- 도넛 3개 -->
+      <div class="g3">
         <div class="card">
-          <div class="ch"><span class="ct">채용 · 교육 비중</span><span class="cs">수주 건수 기준</span></div>
+          <div class="ch"><span class="ct">신규 · 재구매 매출</span><span class="cs">수주 금액 기준</span></div>
+          <div class="cb"><div class="dw"><div class="dc"><canvas id="nrC"></canvas></div><div class="dl" id="nrL"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">채용 · 비채용 비중</span><span class="cs">수주 건수 기준</span></div>
           <div class="cb"><div class="dw"><div class="dc"><canvas id="catC"></canvas></div><div class="dl" id="catL"></div></div></div>
         </div>
         <div class="card">
@@ -625,6 +635,8 @@ function go(){
   rWonKPI(W,A,Ae,mon,workDays,mgr);
   rWonChart(mgr,mon);
   rWonCells(W,mon);
+  rExecChart(mgr);
+  rNrDonut(W);
   rDonut('catC','catL',W,'category',['채용','비채용'],['#D97757','#78716C']);
   rDonut('prodC','prodL',W,'productType',['광고','공고'],['#D97757','#78716C']);
   rConv(W,A,Ae);
@@ -824,6 +836,45 @@ function rDonut(cid,lid,W,f,lbls,cols){
       <div class="ddot" style="background:${cols[i]};"></div>
       <span class="dname">${l}</span>
       <span class="dval">${cnts[i]}건</span><span class="dpct">${tot?((cnts[i]/tot)*100).toFixed(0):0}%</span>
+    </div>`).join(''));
+}
+
+// 집행 매출 추이 (월별 인식매출, 담당자 반영)
+function rExecChart(mgr){
+  const mos=months2026(),lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const dM=mos.map(ym=>Math.round(execSum(mgr,ym)/10000));
+  const total=dM.reduce((a,b)=>a+b,0);
+  set('execTrendSub',`누적 ${fmtN(total)}만원 · 월별 인식매출`);
+  const{grid,text,axis,bar}=gc();
+  CHART_LABELS['execC']={mode:'top',fmt:v=>v.toLocaleString()};
+  if(charts.exec)charts.exec.destroy();
+  charts.exec=new Chart(document.getElementById('execC'),{
+    type:'bar',
+    data:{labels:lbs,datasets:[{label:'집행매출(만원)',data:dM,backgroundColor:bar,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toLocaleString()}만원`}}},
+      scales:{x:{grid:{color:grid},ticks:{color:axis,font:{size:12,weight:'600'}}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:11},callback:v=>v.toLocaleString()},beginAtZero:true,grace:'12%'}}}
+  });
+}
+
+// 신규·재구매 매출 비중 도넛 (수주금액 기준)
+function rNrDonut(W){
+  const nAmt=W.filter(w=>w.isNewRevenue).reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const total=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const cnts=[nAmt,total-nAmt],cols=['#D97757','#78716C'],lbls=['신규','재구매'];
+  if(charts.nr)charts.nr.destroy();
+  charts.nr=new Chart(document.getElementById('nrC'),{
+    type:'doughnut',
+    data:{labels:lbls,datasets:[{data:cnts,backgroundColor:cols,borderWidth:0,hoverOffset:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.parsed)} (${total?((ctx.parsed/total)*100).toFixed(0):0}%)`}}}}
+  });
+  set('nrL',lbls.map((l,i)=>`
+    <div class="dleg">
+      <div class="ddot" style="background:${cols[i]};"></div>
+      <span class="dname">${l}</span>
+      <span class="dval">${fmt(cnts[i])}</span><span class="dpct">${total?((cnts[i]/total)*100).toFixed(0):0}%</span>
     </div>`).join(''));
 }
 
