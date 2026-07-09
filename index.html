@@ -135,6 +135,7 @@ select{height:32px;font-size:12px;padding:0 10px;border:0.5px solid var(--bd);bo
 .chart-wrap.h280{height:280px;}
 .chart-wrap.h300{height:300px;}
 .chart-wrap.h340{height:340px;}
+.chart-wrap.h360{height:360px;}
 /* 진척 KPI 타일 */
 .pace-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .pace-tile{background:var(--sf1);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;}
@@ -144,6 +145,14 @@ select{height:32px;font-size:12px;padding:0 10px;border:0.5px solid var(--bd);bo
 .pace-chg{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;}
 .pace-chg.up{color:#D97757;} .pace-chg.down{color:var(--t2);}
 .pace-sub{font-size:11px;color:var(--t3);margin-top:3px;}
+/* 탭핑률 */
+.tap-box{background:var(--sf1);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+.tap-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.tap-lbl{font-size:12px;color:var(--t2);font-weight:600;}
+.tap-val{font-size:22px;font-weight:800;color:var(--p);letter-spacing:-.02em;}
+.tap-bar{height:8px;background:var(--sf2);border-radius:5px;overflow:hidden;}
+.tap-fill{height:100%;background:var(--p);border-radius:5px;}
+.tap-sub{font-size:11px;color:var(--t3);margin-top:6px;}
 
 /* ── 수주 상세 셀 ── */
 .won-cells{display:flex;flex-direction:column;gap:0;}
@@ -343,6 +352,7 @@ tr:hover td{background:var(--sf1);}
         <div class="card">
           <div class="ch"><span class="ct">보유 리드 분포</span><span class="cs" id="leadTotal"></span></div>
           <div class="cb">
+            <div class="tap-box" id="tapBox"></div>
             <div class="ltree" id="ltree"><div class="ld"><div class="spin"></div></div></div>
           </div>
         </div>
@@ -371,6 +381,12 @@ tr:hover td{background:var(--sf1);}
       <!-- 컨택 KPI -->
       <div class="mkpi-row" id="contKPI">
         <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
+      </div>
+
+      <!-- 담당자별 일자별 컨택 누적 (대형) -->
+      <div class="card">
+        <div class="ch"><span class="ct">담당자별 컨택 추이 — 당월 누적</span><span class="cs" id="mgrTrendSub">누가 꾸준한지 · 선 클릭 시 해당 영업자 강조</span></div>
+        <div class="cb"><div class="chart-wrap h360"><canvas id="mgrTrendC"></canvas></div></div>
       </div>
 
       <div class="g21">
@@ -499,6 +515,24 @@ tr:hover td{background:var(--sf1);}
       <div class="card">
         <div class="ch"><span class="ct">2026 월별 영업일</span><span class="cs">월~금 − 공휴일 · 주황 = 당월</span></div>
         <div class="cb"><div class="chart-wrap h180"><canvas id="bizCalC"></canvas></div></div>
+      </div>
+
+      <!-- 컨택 진척 -->
+      <div class="card">
+        <div class="ch"><span class="ct">컨택 진척</span><span class="cs">일자별 컨택 · 전월 동일 영업일차와 비교</span></div>
+        <div class="cb">
+          <div class="pace-row" id="contactPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">컨택 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="contactDailyC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">컨택 주차별</span><span class="cs">월요일 시작 주 · 단위 건</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="contactWeekC"></canvas></div></div>
+        </div>
       </div>
 
       <!-- 수주 진척 -->
@@ -697,7 +731,9 @@ function go(){
 
   folded=true;thisW=[];otherW=[];
 
+  TAPPED2026=new Set(rawA.filter(a=>String(a.actYM||a.actDate||'').slice(0,4)==='2026').map(a=>a.companyId).filter(v=>v!=null&&v!==''));
   rSummary(L,W,A,Ae,mon,workDays,mgr);
+  rTapping(L);
   rLeadTree(L);
   rStatus(L);
   rContKPI(A,Ae,workDays,mon);
@@ -767,10 +803,13 @@ function weekBucketsOf(ym){
   return w;
 }
 function weekIndexOf(iso,ym){const w=weekBucketsOf(ym),t=new Date(iso+'T00:00:00');for(let i=0;i<w.length;i++)if(t>=w[i].s&&t<=w[i].e)return i;return -1;}
-// 일자별 값 맵 (iso→금액). kind: 'won'(수주금액) | 'exec'(집행)
+// 지표별 포맷 설정
+function kindCfg(kind){return kind==='contact'?{money:false,f:v=>fmtN(Math.round(v))+'건',div:1}:{money:true,f:fmt,div:10000};}
+// 일자별 값 맵 (iso→값). kind: 'won'(수주금액) | 'exec'(집행) | 'contact'(컨택 건수)
 function dailyMap(kind,mgr,ym){
   const map={};
   if(kind==='won'){rawW.forEach(w=>{if(mgr!=='all'&&w.manager!==mgr)return;const d=(w.wonDate||'').slice(0,10);if(d.slice(0,7)!==ym)return;map[d]=(map[d]||0)+(Number(w.amount)||0);});}
+  else if(kind==='contact'){rawA.forEach(a=>{if(mgr!=='all'&&a.manager!==mgr)return;const d=(a.actDate||'').slice(0,10);if(d.slice(0,7)!==ym)return;map[d]=(map[d]||0)+1;});}
   else{rawExecD.forEach(e=>{if(mgr!=='all'&&e.manager!==mgr)return;const d=(e.date||'').slice(0,10);if(d.slice(0,7)!==ym)return;map[d]=(map[d]||0)+(Number(e.amount)||0);});}
   return map;
 }
@@ -797,16 +836,17 @@ function paceStat(kind,mgr,curM,prvM){
   return {n,tot,curNow,prvSame,prvFull,proj};
 }
 
-// 라인 차트(전월 vs 당월 누적)
+// 라인 차트(전월 vs 당월 누적) — 둘 다 실선, 색만 구분, 점 없음
 function dualLine(id,labels,prev,cur,o){
   o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
   if(charts[id])charts[id].destroy();
   charts[id]=new Chart(cv,{type:'line',
     data:{labels,datasets:[
-      {label:o.prvL||'전월',data:prev,borderColor:'#C4A08A',backgroundColor:'transparent',borderWidth:2,tension:.25,pointRadius:0,borderDash:[5,4],spanGaps:true},
-      {label:o.curL||'당월',data:cur,borderColor:'#D97757',backgroundColor:'transparent',borderWidth:2.5,tension:.25,pointRadius:0,spanGaps:false},
+      {label:o.prvL||'전월',data:prev,borderColor:'#B99A85',backgroundColor:'transparent',borderWidth:2,tension:.25,pointRadius:0,spanGaps:true},
+      {label:o.curL||'당월',data:cur,borderColor:'#D97757',backgroundColor:'transparent',borderWidth:3,tension:.25,pointRadius:0,spanGaps:false},
     ]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      layout:{padding:{right:o.gap?46:8,top:6}},
       plugins:{legend:{display:true,labels:{color:text,font:{size:11},boxWidth:14,padding:12}},
         tooltip:{callbacks:{label:ctx=>ctx.parsed.y==null?null:` ${ctx.dataset.label}: ${o.tfmt?o.tfmt(ctx.parsed.y):fmtN(ctx.parsed.y)}`}}},
       scales:{x:{grid:{display:false},ticks:{color:text,font:{size:10},autoSkip:true,maxTicksLimit:o.xticks||11,maxRotation:0}},
@@ -816,18 +856,18 @@ function dualLine(id,labels,prev,cur,o){
 
 // 진척 헤드라인 KPI
 function rPaceKPI(elId,kind,mgr,curM,prvM){
-  const p=paceStat(kind,mgr,curM,prvM);
+  const p=paceStat(kind,mgr,curM,prvM), K=kindCfg(kind);
   const d=p.prvSame>0?((p.curNow-p.prvSame)/p.prvSame*100):(p.curNow>0?100:0);
   const up=d>=0,arrow=up?'▲':'▼',cls=up?'up':'down';
   set(elId,`
-   <div class="pace-tile"><div class="pace-lbl">당월 ${p.n}영업일차 누적</div><div class="pace-val">${fmt(p.curNow)}</div></div>
-   <div class="pace-tile"><div class="pace-lbl">전월 동일 영업일차</div><div class="pace-val muted">${fmt(p.prvSame)}</div><div class="pace-chg ${cls}">${arrow}${Math.abs(d).toFixed(0)}%</div></div>
-   <div class="pace-tile"><div class="pace-lbl">월말 예상 (현재 페이스)</div><div class="pace-val">${fmt(p.proj)}</div><div class="pace-sub">전월 전체 ${fmt(p.prvFull)}</div></div>`);
+   <div class="pace-tile"><div class="pace-lbl">당월 ${p.n}영업일차 누적</div><div class="pace-val">${K.f(p.curNow)}</div></div>
+   <div class="pace-tile"><div class="pace-lbl">전월 동일 영업일차</div><div class="pace-val muted">${K.f(p.prvSame)}</div><div class="pace-chg ${cls}">${arrow}${Math.abs(d).toFixed(0)}%</div></div>
+   <div class="pace-tile"><div class="pace-lbl">월말 예상 (현재 페이스)</div><div class="pace-val">${K.f(p.proj)}</div><div class="pace-sub">전월 전체 ${K.f(p.prvFull)}</div></div>`);
 }
-// 일자별 누적선
+// 일자별 누적선 (+ 오늘 시점 당월−전월 갭 표기)
 function rDailyLine(id,kind,mgr,curM,prvM){
   const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-  const todayISO=`${todayYM}-${pad2(now.getDate())}`;
+  const todayISO=`${todayYM}-${pad2(now.getDate())}`, K=kindCfg(kind);
   const[cy,cm]=curM.split('-').map(Number),[py,pm]=prvM.split('-').map(Number);
   const lastC=new Date(cy,cm,0).getDate(),lastP=new Date(py,pm,0).getDate(),maxD=Math.max(lastC,lastP);
   const labels=Array.from({length:maxD},(_,i)=>`${i+1}`);
@@ -835,18 +875,55 @@ function rDailyLine(id,kind,mgr,curM,prvM){
   const cur=cumByCalendar(kind,mgr,curM,curM===todayYM?todayISO:null);
   while(prev.length<maxD)prev.push(prev.length?prev[prev.length-1]:0);
   while(cur.length<maxD)cur.push(null);
-  dualLine(id,labels,prev,cur,{prvL:`${pm}월`,curL:`${cm}월`,money:true,tfmt:v=>fmt(v),xticks:11});
+  // 당월 마지막 유효 지점 index → 갭 = 당월 − 전월(같은 일자)
+  let ti=-1;for(let i=0;i<cur.length;i++)if(cur[i]!=null)ti=i;
+  if(ti>=0){const gap=(cur[ti]||0)-(prev[ti]||0);const up=gap>=0;
+    CHART_LABELS[id]={mode:'lineGap',at:ti,up,text:(up?'▲':'▼')+' '+K.f(Math.abs(gap))};}
+  else CHART_LABELS[id]=null;
+  dualLine(id,labels,prev,cur,{prvL:`${pm}월`,curL:`${cm}월`,money:K.money,tfmt:v=>K.f(v),xticks:11,gap:ti>=0});
 }
 // 주차별 막대
 function rWeekBar(id,kind,mgr,curM,prvM){
+  const K=kindCfg(kind);
   const cw=weekSums(kind,mgr,curM),pw=weekSums(kind,mgr,prvM),n=Math.max(cw.length,pw.length);
   const labels=Array.from({length:n},(_,i)=>`${i+1}주차`);
-  const P=Array.from({length:n},(_,i)=>Math.round((pw[i]||0)/10000)),C=Array.from({length:n},(_,i)=>Math.round((cw[i]||0)/10000));
+  const P=Array.from({length:n},(_,i)=>Math.round((pw[i]||0)/K.div)),C=Array.from({length:n},(_,i)=>Math.round((cw[i]||0)/K.div));
   CHART_LABELS[id]={mode:'top',fmt:v=>v?v.toLocaleString():''};
   groupBar(id,labels,[
-    {label:`${+prvM.split('-')[1]}월`,data:P,color:'#C4A08A'},
+    {label:`${+prvM.split('-')[1]}월`,data:P,color:'#B99A85'},
     {label:`${+curM.split('-')[1]}월`,data:C,color:'#D97757'},
-  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:26});
+  ],{money:K.money,tfmt:v=>v.toLocaleString()+(K.money?'만원':'건'),padTop:26});
+}
+// 담당자별 일자별 컨택 누적 — 전체 폭 대형 멀티라인 (모든 담당자)
+const MGR_COLORS=['#D97757','#6B8E9E','#8A9A5B','#C08497','#9B8BbD','#D4A15E','#5F9EA0','#B5838D','#7A9E7E','#C9866B'];
+function rMgrTrend(){
+  const{grid,text}=gc();const cv=document.getElementById('mgrTrendC');if(!cv)return;
+  const mon=document.getElementById('monSel').value, curM=curYMof(mon);
+  const sel=document.getElementById('mgrSel').value;
+  const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`,todayISO=`${todayYM}-${pad2(now.getDate())}`;
+  const[cy,cm]=curM.split('-').map(Number),last=new Date(cy,cm,0).getDate();
+  const labels=Array.from({length:last},(_,i)=>`${i+1}`);
+  const mgrs=[...new Set(rawA.map(a=>a.manager).filter(Boolean))].sort();
+  const upto=curM===todayYM?todayISO:null;
+  const ds=mgrs.map((m,i)=>{
+    const arr=cumByCalendar('contact',m,curM,upto);
+    while(arr.length<last)arr.push(null);
+    const on=(sel==='all'||sel===m);
+    const col=MGR_COLORS[i%MGR_COLORS.length];
+    return {label:m,data:arr,borderColor:on?col:col+'55',backgroundColor:'transparent',
+      borderWidth:on?3:1.5,pointRadius:0,tension:.25,spanGaps:false};
+  });
+  set('mgrTrendSub',`${cm}월 · 담당자별 누적 컨택${sel!=='all'?` · ${sel} 강조`:''}`);
+  if(charts.mgrTrend)charts.mgrTrend.destroy();
+  charts.mgrTrend=new Chart(cv,{type:'line',data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',axis:'x',intersect:false},
+      onClick:(e,el)=>{if(el.length)selectManager(ds[el[0].datasetIndex].label);},
+      layout:{padding:{top:6,right:10}},
+      plugins:{legend:{display:true,position:'top',labels:{color:text,font:{size:11},boxWidth:12,padding:10,usePointStyle:true}},
+        tooltip:{callbacks:{label:ctx=>ctx.parsed.y==null?null:` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y)}건`}}},
+      scales:{x:{grid:{display:false},ticks:{color:text,font:{size:10},autoSkip:true,maxTicksLimit:12,maxRotation:0}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:10}},beginAtZero:true,grace:'8%'}}}
+  });
 }
 // 연간 영업일 캘린더
 function rBizCalendar(){
@@ -867,7 +944,9 @@ function renderProgress(){
   const mgr=document.getElementById('mgrSel').value, mon=document.getElementById('monSel').value;
   const curM=curYMof(mon), prvM=prevYM(curM);
   rBizCalendar();
+  rMgrTrend();
   set('paceCtx',`${+curM.split('-')[1]}월 ${elapsedBizOf(curM)}영업일차 / 총 ${bizCountOf(curM)}영업일 · 전월 동일 영업일차와 비교`);
+  rPaceKPI('contactPaceKPI','contact',mgr,curM,prvM); rDailyLine('contactDailyC','contact',mgr,curM,prvM); rWeekBar('contactWeekC','contact',mgr,curM,prvM);
   rPaceKPI('wonPaceKPI','won',mgr,curM,prvM);  rDailyLine('wonDailyC','won',mgr,curM,prvM);  rWeekBar('wonWeekC','won',mgr,curM,prvM);
   rPaceKPI('execPaceKPI','exec',mgr,curM,prvM); rDailyLine('execDailyC','exec',mgr,curM,prvM); rWeekBar('execWeekC','exec',mgr,curM,prvM);
 }
@@ -883,6 +962,18 @@ function rSummary(L,W,A,Ae,mon,wd,mgr){
   set('sb3',W.length+'건');set('sb3s',`신규 ${nW} · 재구매 ${rW}`);
   set('sb4',fmt(wAmt));set('sb4s','수주 기준');
   set('sb5',fmt(exec));set('sb5s','집행 기준');
+}
+
+// 탭핑률: 보유 리드 중 2026년 한 번이라도 활동(컨택)한 리드 비율
+let TAPPED2026=new Set();
+function rTapping(L){
+  const tot=L.length;
+  const tapped=L.filter(l=>TAPPED2026.has(l.companyId)).length;
+  const pct=tot?(tapped/tot*100):0;
+  set('tapBox',`
+    <div class="tap-top"><span class="tap-lbl">리드 탭핑률 <span style="font-size:10px;color:var(--t3);">(2026년 1회+ 활동)</span></span><span class="tap-val">${pct.toFixed(0)}%</span></div>
+    <div class="tap-bar"><div class="tap-fill" style="width:${pct}%;"></div></div>
+    <div class="tap-sub">보유 ${fmtN(tot)}개 중 ${fmtN(tapped)}개 탭핑 · 미탭핑 ${fmtN(tot-tapped)}개</div>`);
 }
 
 function rLeadTree(L){
@@ -985,7 +1076,8 @@ function rWonKPI(W,A,Ae,mon,wd,mgr){
 }
 
 function rWonChart(mgr,mon){
-  const mos=months2026(),lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  const mos=months2026().filter(ym=>ym<=todayYM),lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);  // 당월까지만
   const flt=w=>mgr==='all'||w.manager===mgr;
   const cD=mos.map(ym=>rawW.filter(w=>flt(w)&&w.wonYM===ym).length);
   const aD=mos.map(ym=>Math.round(rawW.filter(w=>flt(w)&&w.wonYM===ym).reduce((s,w)=>s+(Number(w.amount)||0),0)/10000));
@@ -995,7 +1087,7 @@ function rWonChart(mgr,mon){
   charts.won=new Chart(document.getElementById('wonC'),{
     type:'bar',
     data:{labels:lbs,datasets:[
-      {label:'금액(만원)',data:aD,type:'line',borderColor:line,pointBackgroundColor:line,tension:.3,yAxisID:'y1',pointRadius:5,fill:false,borderWidth:2,order:1},
+      {label:'금액(만원)',data:aD,type:'line',borderColor:line,tension:.3,yAxisID:'y1',pointRadius:0,pointHoverRadius:4,fill:false,borderWidth:2.5,order:1},
       {label:'건수',data:cD,backgroundColor:bar,borderRadius:4,yAxisID:'y',order:2},
     ]},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
@@ -1265,7 +1357,8 @@ const valueLabelPlugin={
   afterDatasetsDraw(chart){
     const spec=CHART_LABELS[chart.canvas.id];
     if(!spec)return;
-    const ctx=chart.ctx, tcol=gc().text;
+    const ctx=chart.ctx, tcol=gc().text, lab=gc().axis;   // lab=밝고 진한 라벨색(가시성)
+    const FN='800 13px Arial';                            // 값 라벨: 크고 볼드
     ctx.save();ctx.textAlign='center';
 
     if(spec.mode==='top'){
@@ -1274,7 +1367,7 @@ const valueLabelPlugin={
         meta.data.forEach((el,i)=>{
           const v=ds.data[i];if(v==null)return;
           const t=spec.fmt?spec.fmt(v,di,i):String(v);
-          if(t){ctx.font='700 10px Arial';ctx.fillStyle=spec.color?spec.color(di):tcol;ctx.fillText(t,el.x,el.y-5);}
+          if(t){ctx.font=FN;ctx.fillStyle=spec.color?spec.color(di):lab;ctx.fillText(t,el.x,el.y-6);}
         });
       });
       if(spec.groupTop){
@@ -1284,8 +1377,8 @@ const valueLabelPlugin={
           chart.data.datasets.forEach((ds,di)=>{const el=chart.getDatasetMeta(di).data[i];if(!el)return;minY=Math.min(minY,el.y);xs.push(el.x);});
           if(!xs.length)continue;
           const t=spec.groupTop(i);if(!t)continue;
-          ctx.font='700 10px Arial';ctx.fillStyle=(t[0]==='▼')?tcol:'#D97757';
-          ctx.fillText(t,xs.reduce((a,b)=>a+b,0)/xs.length,minY-19);
+          ctx.font=FN;ctx.fillStyle=(t[0]==='▼')?lab:'#D97757';
+          ctx.fillText(t,xs.reduce((a,b)=>a+b,0)/xs.length,minY-22);
         }
       }
     }
@@ -1298,9 +1391,9 @@ const valueLabelPlugin={
         meta.data.forEach((el,i)=>{
           const v=ds.data[i];if(!v)return;
           const p=el.getProps(['y','base','x'],true);
-          if(Math.abs(p.base-p.y)<13)return;
-          ctx.font='700 10px Arial';ctx.fillStyle=tc;
-          ctx.fillText(spec.segFmt?spec.segFmt(v,di):String(v),p.x,(p.y+p.base)/2+3);
+          if(Math.abs(p.base-p.y)<15)return;
+          ctx.font=FN;ctx.fillStyle=tc;
+          ctx.fillText(spec.segFmt?spec.segFmt(v,di):String(v),p.x,(p.y+p.base)/2+4);
         });
       });
       // 스택 상단에 요약 라인 (배열: 위→아래)
@@ -1310,10 +1403,20 @@ const valueLabelPlugin={
         const topY=el.getProps(['y'],true).y;
         lines.forEach((ln,li)=>{
           const obj=(typeof ln==='object');
-          ctx.font='700 10px Arial';ctx.fillStyle=(obj&&ln.hl)?'#D97757':tcol;
-          ctx.fillText(obj?ln.t:ln, el.x, topY-6-(lines.length-1-li)*12);
+          ctx.font=FN;ctx.fillStyle=(obj&&ln.hl)?'#D97757':lab;
+          ctx.fillText(obj?ln.t:ln, el.x, topY-7-(lines.length-1-li)*14);
         });
       });
+    }
+
+    // 라인 차트: 당월 마지막 지점에 당월−전월 갭 하나만 표기
+    if(spec.mode==='lineGap' && spec.at!=null){
+      const el=(chart.getDatasetMeta(1).data||[])[spec.at];
+      if(el){
+        ctx.font='800 14px Arial';ctx.textAlign='left';
+        ctx.fillStyle=spec.up?'#D97757':lab;
+        ctx.fillText(spec.text, el.x+8, el.y-2);
+      }
     }
     ctx.restore();
   }
