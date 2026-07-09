@@ -525,6 +525,11 @@ async function load(){
   try{
     const j=await fetch(GAS).then(r=>r.json());
     rawL=j.leads||[]; rawA=j.activities||[]; rawW=j.deals||[]; rawExec=j.execMonthly||[];
+    // 월 키 정규화: 시트 왕복 중 날짜로 변질된 경우 'YYYY-MM'만 추출 (없으면 날짜 필드에서 보정)
+    const ym7=v=>{const m=String(v==null?'':v).match(/(\d{4})-(\d{2})/);return m?m[1]+'-'+m[2]:'';};
+    rawA.forEach(a=>{a.actYM=ym7(a.actYM)||ym7(a.actDate);});
+    rawW.forEach(w=>{w.wonYM=ym7(w.wonYM)||ym7(w.wonDate);});
+    rawExec.forEach(e=>{e.ym=ym7(e.ym);});
     if(rawW.length) AVG_PRICE=rawW.reduce((s,w)=>s+(Number(w.amount)||0),0)/rawW.length||AVG_PRICE;
     document.getElementById('lastUp').textContent=(j.meta&&j.meta.generatedAt)?('갱신 '+j.meta.generatedAt):new Date().toLocaleTimeString('ko-KR');
     buildMonths(); fillMgr(); go();
