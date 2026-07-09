@@ -382,7 +382,7 @@ tr:hover td{background:var(--sf1);}
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 컨택 비교 — 총 컨택 vs 유니크 기업</span><span class="cs">막대 위 건수 · 상단 기업당 반복(회/사) · 막대 클릭 시 필터</span></div>
+        <div class="ch"><span class="ct">영업자별 컨택 — 전월 vs 당월</span><span class="cs">막대 위 건수 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContC"></canvas></div></div>
       </div>
 
@@ -458,18 +458,18 @@ tr:hover td{background:var(--sf1);}
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 수주 비교 — 수주금액 · 집행매출</span><span class="cs">단위: 만원 · 막대 위 금액/상단 전환율 표기 · 툴팁에서 건수 확인</span></div>
+        <div class="ch"><span class="ct">영업자별 수주금액 — 전월 vs 당월</span><span class="cs">단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonC"></canvas></div></div>
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 매출 비교 — 신규 · 재구매</span><span class="cs">단위: 만원 · 막대 위 금액 표기 · 툴팁에서 신규 비중 확인</span></div>
+        <div class="ch"><span class="ct">영업자별 수주건수 — 전월 vs 당월</span><span class="cs">상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 평균 객단가</span><span class="cs">수주금액 ÷ 수주건수 · 단위: 만원 · 툴팁에서 수주건수 확인</span></div>
-        <div class="cb"><div class="chart-wrap h280"><canvas id="cmpUnitC"></canvas></div></div>
+        <div class="ch"><span class="ct">영업자별 평균 객단가 — 전월 vs 당월</span><span class="cs">수주금액 ÷ 수주건수 · 단위: 만원 · 상단 전월 대비 증감(▲/▼)</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpUnitC"></canvas></div></div>
       </div>
 
     </div>
@@ -653,7 +653,9 @@ function fmt(n){return Math.round(n/10000).toLocaleString()+'만원';}
 function fmtN(n){return Number(n).toLocaleString();}
 function rate(n,d){return d>0?((n/d)*100).toFixed(1)+'%':'—';}
 function nextM(ym){const[y,m]=ym.split('-').map(Number);return`${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}`;}
-function gc(){const d=dark();return{grid:d?'#2A2A28':'#EFEFED',text:d?'#78716C':'#A8A29E',bar:d?'#5C3D2C':'#D97757',line:d?'#787672':'#78716C'};}
+function gc(){const d=dark();return{grid:d?'#2A2A28':'#EFEFED',text:d?'#78716C':'#A8A29E',axis:d?'#E7E5E4':'#292524',bar:d?'#5C3D2C':'#D97757',line:d?'#787672':'#78716C'};}
+function prevYM(ym){const[y,m]=ym.split('-').map(Number);return `${m===1?y-1:y}-${String(m===1?12:m-1).padStart(2,'0')}`;}
+function months2026(){return MONTHS.filter(m=>m.slice(0,4)==='2026');}
 
 function rSummary(L,W,A,Ae,mon,wd,mgr){
   const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
@@ -715,10 +717,10 @@ function rContKPI(A,Ae,wd,mon){
 }
 
 function rActChart(mgr,mon,wd){
-  const mos=MONTHS,lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const mos=months2026(),lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
   const d=mos.map(ym=>rawA.filter(a=>(mgr==='all'||a.manager===mgr)&&a.actYM===ym).length);
   const avgD=mos.map((ym,i)=>(d[i]/(bizDays(ym)||1)).toFixed(1));
-  const{grid,text,bar}=gc();
+  const{grid,text,axis,bar}=gc();
   const idx=mos.indexOf(mon);
   set('actSub',mon==='all'?`${mos.length}개월`:`일평균 ${avgD[idx]||'0'}건`);
   CHART_LABELS['actC']={mode:'top',fmt:v=>fmtN(v)};
@@ -728,7 +730,7 @@ function rActChart(mgr,mon,wd){
     data:{labels:lbs,datasets:[{label:'활동 건수',data:d,backgroundColor:bar,borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},
       plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:ctx=>`일평균: ${avgD[ctx.dataIndex]}건`}}},
-      scales:{x:{grid:{color:grid},ticks:{color:text,font:{size:11}}},y:{grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true}}}
+      scales:{x:{grid:{color:grid},ticks:{color:axis,font:{size:12,weight:'600'}}},y:{grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true}}}
   });
 }
 
@@ -768,11 +770,11 @@ function rWonKPI(W,A,Ae,mon,wd,mgr){
 }
 
 function rWonChart(mgr,mon){
-  const mos=MONTHS,lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const mos=months2026(),lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
   const flt=w=>mgr==='all'||w.manager===mgr;
   const cD=mos.map(ym=>rawW.filter(w=>flt(w)&&w.wonYM===ym).length);
   const aD=mos.map(ym=>Math.round(rawW.filter(w=>flt(w)&&w.wonYM===ym).reduce((s,w)=>s+(Number(w.amount)||0),0)/10000));
-  const{grid,text,bar,line}=gc();
+  const{grid,text,axis,bar,line}=gc();
   CHART_LABELS['wonC']={mode:'top',fmt:(v,di)=>di===0?v.toLocaleString():String(v)};
   if(charts.won)charts.won.destroy();
   charts.won=new Chart(document.getElementById('wonC'),{
@@ -783,7 +785,7 @@ function rWonChart(mgr,mon){
     ]},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
       plugins:{legend:{labels:{color:text,font:{size:11},boxWidth:10,padding:14}}},
-      scales:{x:{grid:{color:grid},ticks:{color:text,font:{size:11}}},
+      scales:{x:{grid:{color:grid},ticks:{color:axis,font:{size:12,weight:'600'}}},
               y:{grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true,position:'left'},
               y1:{grid:{display:false},ticks:{color:text,font:{size:11}},beginAtZero:true,position:'right'}}}
   });
@@ -861,8 +863,11 @@ function rUnit(W){
 function rFc(L){
   const q=L.filter(l=>['견적발송','제안발송'].includes(l.activityStatus));
   const e=L.filter(l=>l.activityStatus==='구매예정');
-  const qA=Math.round(q.length*0.6*AVG_PRICE);
-  const eA=Math.round(e.length*0.9*AVG_PRICE);
+  // 각 리드의 견적금액(expectedRevenue) 사용, 없으면 평균 객단가로 보정
+  const amt=l=>Number(l.expectedRevenue)>0?Number(l.expectedRevenue):AVG_PRICE;
+  const sumE=arr=>arr.reduce((s,l)=>s+amt(l),0);
+  const qA=Math.round(sumE(q)*0.6);
+  const eA=Math.round(sumE(e)*0.9);
   set('fcList',`
     <div class="fc-row">
       <div><div class="fc-stage">견적발송</div><div class="fc-sub">전환율 60% 적용</div></div>
@@ -1022,7 +1027,7 @@ const valueLabelPlugin={
           chart.data.datasets.forEach((ds,di)=>{const el=chart.getDatasetMeta(di).data[i];if(!el)return;minY=Math.min(minY,el.y);xs.push(el.x);});
           if(!xs.length)continue;
           const t=spec.groupTop(i);if(!t)continue;
-          ctx.font='700 10px Arial';ctx.fillStyle='#D97757';
+          ctx.font='700 10px Arial';ctx.fillStyle=(t[0]==='▼')?tcol:'#D97757';
           ctx.fillText(t,xs.reduce((a,b)=>a+b,0)/xs.length,minY-19);
         }
       }
@@ -1058,44 +1063,40 @@ const valueLabelPlugin={
 };
 if(window.Chart)Chart.register(valueLabelPlugin);
 
-const CMP_ORDER_KEY='wonAmt'; // 모든 차트 공통 정렬 기준(수주금액 내림차순) → 아래로 스캔하며 같은 영업자 추적
-
+// 특정 담당자·특정 월의 지표
+function mgrMonth(m,ym){
+  const W=rawW.filter(w=>w.manager===m&&w.wonYM===ym);
+  const A=rawA.filter(a=>a.manager===m&&a.actYM===ym);
+  const wonAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  return {contacts:A.length,
+    contactsUniq:new Set(A.map(a=>a.companyId).filter(Boolean)).size,
+    wonAmt,wonCnt:W.length,exec:execSum(m,ym),
+    avgPrice:W.length?wonAmt/W.length:0};
+}
+// 영업자별: 당월(curM) vs 전월(prvM). mon='전체'면 최신 수주월을 당월로.
 function computeManagerStats(){
   const mon=document.getElementById('monSel').value;
-  const wd=getWorkDays(mon);
-  const fw=w=>mon==='all'||w.wonYM===mon;
-  const fa=a=>mon==='all'||a.actYM===mon;
-  const cmap={};rawL.forEach(l=>{if(l.companyId)cmap[l.companyId]={ct:l.contractType,cat:l.category};});
+  const curM=mon==='all'?([...new Set(rawW.map(w=>w.wonYM).filter(Boolean))].sort().pop()||''):mon;
+  const prvM=prevYM(curM);
   const set=new Set();
   rawL.forEach(l=>l.manager&&set.add(l.manager));
   rawW.forEach(w=>w.manager&&set.add(w.manager));
   rawA.forEach(a=>a.manager&&set.add(a.manager));
   const arr=[...set].map(m=>{
     const L=rawL.filter(l=>l.manager===m);
-    const W=rawW.filter(w=>w.manager===m&&fw(w));
-    const A=rawA.filter(a=>a.manager===m&&fa(a));
-    const Ae=A.map(a=>({...a,...(cmap[a.companyId]||{ct:''})}));
-    const wonAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
-    const wonNewAmt=W.filter(w=>w.isNewRevenue).reduce((s,w)=>s+(Number(w.amount)||0),0);
-    const uniqCompanies=new Set(A.map(a=>a.companyId).filter(Boolean)).size;
     return {manager:m,
       leadNew:L.filter(l=>l.contractType==='신규').length,
       leadRe:L.filter(l=>l.contractType==='재구매').length,
       leads:L.length,
-      contacts:A.length,contactsUniq:uniqCompanies,dailyAvg:A.length/wd,
-      contNew:Ae.filter(a=>a.ct==='신규').length,
-      contRe:Ae.filter(a=>a.ct==='재구매').length,
-      wonCnt:W.length,wonAmt,exec:execSum(m,mon),
-      wonNewAmt,wonReAmt:wonAmt-wonNewAmt,
-      avgPrice:W.length?wonAmt/W.length:0};
+      cur:mgrMonth(m,curM), prev:mgrMonth(m,prvM), curM, prvM};
   });
-  arr.sort((a,b)=>b[CMP_ORDER_KEY]-a[CMP_ORDER_KEY]);
+  arr.sort((a,b)=>b.cur.wonAmt-a.cur.wonAmt);
   return arr;
 }
 
 // 스택 막대 (신규/재구매/기타). o.padTop=상단 요약 라인 공간, o.footer=툴팁 하단
 function stackBar(id,labels,series,o){
-  o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
+  o=o||{};const{grid,text,axis}=gc();const cv=document.getElementById(id);if(!cv)return;
   const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.color,borderRadius:4,stack:'s',maxBarThickness:56}));
   if(charts[id])charts[id].destroy();
   charts[id]=new Chart(cv,{
@@ -1107,14 +1108,14 @@ function stackBar(id,labels,series,o){
       plugins:{legend:{display:true,labels:{color:text,font:{size:11},boxWidth:10,padding:12}},
         tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y)}${o.unit||''}`,
           footer:o.footer||(items=>`합계: ${fmtN(items.reduce((s,it)=>s+it.parsed.y,0))}${o.unit||''}`)}}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{color:text,font:{size:11}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{color:axis,font:{size:12,weight:'600'}}},
               y:{stacked:true,grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true}}}
   });
 }
 
 // 그룹 막대 (여러 지표 나란히). 막대 위 값 라벨 + o.footer 툴팁. 막대 간격은 barPercentage로 좁힘
 function groupBar(id,labels,series,o){
-  o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
+  o=o||{};const{grid,text,axis}=gc();const cv=document.getElementById(id);if(!cv)return;
   const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.color,borderRadius:4,
     maxBarThickness:40,categoryPercentage:0.62,barPercentage:0.96}));
   if(charts[id])charts[id].destroy();
@@ -1126,60 +1127,56 @@ function groupBar(id,labels,series,o){
       layout:{padding:{top:o.padTop||30}},
       plugins:{legend:{display:!o.noLegend,labels:{color:text,font:{size:11},boxWidth:10,padding:12}},
         tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${o.tfmt?o.tfmt(ctx.parsed.y):ctx.parsed.y}`,footer:o.footer}}},
-      scales:{x:{grid:{display:false},ticks:{color:text,font:{size:11}}},
+      scales:{x:{grid:{display:false},ticks:{color:axis,font:{size:12,weight:'600'}}},
               y:{grid:{color:grid},ticks:{color:text,font:{size:11},callback:v=>o.money?v.toLocaleString():v},beginAtZero:true,grace:'16%'}}}
   });
 }
 
-// 수주율(전환율) = 수주건수 ÷ 컨택건수
-function convRate(s){return s.contacts?(s.wonCnt/s.contacts*100).toFixed(1):'0.0';}
+// 전월 대비 증감률 라벨 (▲/▼). prev=0이면 신규
+function momPct(cur,prev){ if(!prev&&!cur)return ''; if(!prev)return '신규'; const d=(cur-prev)/prev*100; return (d>=0?'▲':'▼')+Math.abs(d).toFixed(0)+'%'; }
 
-// 각 섹션 하단의 영업자별 비교 차트 (담당자 필터 무관, 기간 필터만 반영)
+// 영업자별 비교: 전월 vs 당월 (전달보다 잘하냐/못하냐)
 function renderCompare(){
   if(!window.Chart)return;
   const stats=computeManagerStats();
   if(!stats.length)return;
   const labels=stats.map(s=>s.manager);
-  const wd=getWorkDays(document.getElementById('monSel').value);
+  const curL=stats[0].curM?`${+stats[0].curM.split('-')[1]}월`:'당월';
+  const prvL=stats[0].prvM?`${+stats[0].prvM.split('-')[1]}월`:'전월';
 
-  // 리드 현황 · 영업자별 보유 리드 (신규/재구매 스택) — 세그먼트 값 + 총합
+  // 리드 보유 (스냅샷, 신규/재구매 스택) — 월 비교 대상 아님
   CHART_LABELS['cmpLeadC']={mode:'stack',segFmt:v=>fmtN(v),top:i=>[`총 ${fmtN(stats[i].leads)}`]};
   stackBar('cmpLeadC',labels,[
     {label:'신규',data:stats.map(s=>s.leadNew),color:'#D97757'},
     {label:'재구매',data:stats.map(s=>s.leadRe),color:'#78716C'},
   ],{unit:'개',padTop:22});
 
-  // 컨택 현황 · 영업자별 총 컨택 vs 유니크 기업 (그룹) — 막대 값 + 기업당 반복 상단
-  CHART_LABELS['cmpContC']={mode:'top',fmt:v=>fmtN(v),
-    groupTop:i=>{const s=stats[i];return s.contactsUniq?`${(s.contacts/s.contactsUniq).toFixed(1)}회/사`:'';}};
-  groupBar('cmpContC',labels,[
-    {label:'총 컨택',data:stats.map(s=>s.contacts),color:'#D97757'},
-    {label:'유니크 기업',data:stats.map(s=>s.contactsUniq),color:'#C4A08A'},
-  ],{tfmt:v=>fmtN(v)+'건',padTop:28,
-     footer:items=>{const s=stats[items[0].dataIndex];return `총 ${fmtN(s.contacts)}건 · 유니크 ${fmtN(s.contactsUniq)}개 · 일평균 ${(s.contacts/wd).toFixed(1)}건`;}});
+  // 전월 vs 당월 그룹 차트 헬퍼 (막대 위 값 + 상단 증감률)
+  const mom=(id,pick,o)=>{
+    o=o||{};
+    CHART_LABELS[id]={mode:'top',fmt:o.lfmt||(v=>fmtN(v)),
+      groupTop:i=>momPct(pick(stats[i].cur),pick(stats[i].prev))};
+    groupBar(id,labels,[
+      {label:prvL+' (전월)',data:stats.map(s=>o.disp?o.disp(pick(s.prev)):pick(s.prev)),color:'#C4A08A'},
+      {label:curL+' (당월)',data:stats.map(s=>o.disp?o.disp(pick(s.cur)):pick(s.cur)),color:'#D97757'},
+    ],{money:o.money,tfmt:o.tfmt,padTop:32,footer:o.footer});
+  };
 
-  // 수주 현황 · 영업자별 수주금액/집행매출 (그룹) — 막대 값 + 건수 툴팁 + 수주율 상단
-  CHART_LABELS['cmpWonC']={mode:'top',fmt:v=>v.toLocaleString(),groupTop:i=>`전환 ${convRate(stats[i])}%`};
-  groupBar('cmpWonC',labels,[
-    {label:'수주금액',data:stats.map(s=>Math.round(s.wonAmt/10000)),color:'#D97757'},
-    {label:'집행매출',data:stats.map(s=>Math.round(s.exec/10000)),color:'#C4A08A'},
-  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:34,
-     footer:items=>`수주 건수: ${stats[items[0].dataIndex].wonCnt}건`});
+  // 컨택: 전월 vs 당월 총 컨택
+  mom('cmpContC', s=>s.contacts, {tfmt:v=>fmtN(v)+'건',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmtN(s.cur.contacts)}건(유니크 ${fmtN(s.cur.contactsUniq)}) · 전월 ${fmtN(s.prev.contacts)}건`;}});
 
-  // 수주 현황 · 영업자별 신규/재구매 매출 (그룹) — 막대 값 + 신규 비중 툴팁
-  CHART_LABELS['cmpWonNRC']={mode:'top',fmt:v=>v.toLocaleString()};
-  groupBar('cmpWonNRC',labels,[
-    {label:'신규 매출',data:stats.map(s=>Math.round(s.wonNewAmt/10000)),color:'#D97757'},
-    {label:'재구매 매출',data:stats.map(s=>Math.round(s.wonReAmt/10000)),color:'#C4A08A'},
-  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:22,
-     footer:items=>{const s=stats[items[0].dataIndex];return `총 ${fmtN(Math.round(s.wonAmt/10000))}만원 · 신규 ${s.wonAmt?(s.wonNewAmt/s.wonAmt*100).toFixed(0):0}%`;}});
+  // 수주금액: 전월 vs 당월
+  mom('cmpWonC', s=>s.wonAmt, {money:true,disp:v=>Math.round(v/10000),lfmt:v=>v.toLocaleString(),tfmt:v=>v.toLocaleString()+'만원',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmt(s.cur.wonAmt)} · 전월 ${fmt(s.prev.wonAmt)}`;}});
 
-  // 수주 현황 · 영업자별 평균 객단가 (단일 막대)
-  CHART_LABELS['cmpUnitC']={mode:'top',fmt:v=>v.toLocaleString()};
-  groupBar('cmpUnitC',labels,[
-    {label:'평균 객단가',data:stats.map(s=>Math.round(s.avgPrice/10000)),color:'#D97757'},
-  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:22,noLegend:true,
-     footer:items=>`수주 ${stats[items[0].dataIndex].wonCnt}건`});
+  // 수주건수: 전월 vs 당월
+  mom('cmpWonNRC', s=>s.wonCnt, {tfmt:v=>v+'건',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${s.cur.wonCnt}건 · 전월 ${s.prev.wonCnt}건`;}});
+
+  // 객단가: 전월 vs 당월
+  mom('cmpUnitC', s=>s.avgPrice, {money:true,disp:v=>Math.round(v/10000),lfmt:v=>v.toLocaleString(),tfmt:v=>v.toLocaleString()+'만원',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmt(s.cur.avgPrice)} · 전월 ${fmt(s.prev.avgPrice)}`;}});
 }
 
 function selectManager(m){
