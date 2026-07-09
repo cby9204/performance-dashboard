@@ -368,6 +368,11 @@ tr:hover td{background:var(--sf1);}
         <div class="ch"><span class="ct">영업자별 보유 리드 비교 — 신규 · 재구매</span><span class="cs">막대 높이 = 총 보유 리드 · 막대 클릭 시 해당 영업자 필터</span></div>
         <div class="cb"><div class="chart-wrap h280"><canvas id="cmpLeadC"></canvas></div></div>
       </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 리드 탭핑률</span><span class="cs">보유 리드 대비 2026년 1회+ 활동 비율 · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h260"><canvas id="tapMgrC"></canvas></div></div>
+      </div>
     </div>
 
     <!-- ══ STEP 2: 컨택 현황 ══ -->
@@ -383,9 +388,9 @@ tr:hover td{background:var(--sf1);}
         <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
       </div>
 
-      <!-- 담당자별 일자별 컨택 누적 (대형) -->
+      <!-- 컨택 추이 (대형) — 당월 vs 전월, 담당자 필터로 한 명씩 -->
       <div class="card">
-        <div class="ch"><span class="ct">담당자별 컨택 추이 — 당월 누적</span><span class="cs" id="mgrTrendSub">누가 꾸준한지 · 선 클릭 시 해당 영업자 강조</span></div>
+        <div class="ch"><span class="ct">컨택 추이 — 당월 vs 전월</span><span class="cs" id="mgrTrendSub">담당자 필터로 한 명씩 · 오늘 시점 갭 표기</span></div>
         <div class="cb"><div class="chart-wrap h360"><canvas id="mgrTrendC"></canvas></div></div>
       </div>
 
@@ -517,22 +522,16 @@ tr:hover td{background:var(--sf1);}
         <div class="cb"><div class="chart-wrap h180"><canvas id="bizCalC"></canvas></div></div>
       </div>
 
-      <!-- 컨택 진척 -->
+      <!-- 컨택 진척 (일자별 누적은 STEP2 대형 차트로, 여기선 요약+주차별) -->
       <div class="card">
-        <div class="ch"><span class="ct">컨택 진척</span><span class="cs">일자별 컨택 · 전월 동일 영업일차와 비교</span></div>
+        <div class="ch"><span class="ct">컨택 진척</span><span class="cs">전월 동일 영업일차와 비교 · 일자별 추이는 컨택 현황(STEP2) 참고</span></div>
         <div class="cb">
           <div class="pace-row" id="contactPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
         </div>
       </div>
-      <div class="g2">
-        <div class="card">
-          <div class="ch"><span class="ct">컨택 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="contactDailyC"></canvas></div></div>
-        </div>
-        <div class="card">
-          <div class="ch"><span class="ct">컨택 주차별</span><span class="cs">월요일 시작 주 · 단위 건</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="contactWeekC"></canvas></div></div>
-        </div>
+      <div class="card">
+        <div class="ch"><span class="ct">컨택 주차별</span><span class="cs">월요일 시작 주 · 단위 건</span></div>
+        <div class="cb"><div class="chart-wrap h260"><canvas id="contactWeekC"></canvas></div></div>
       </div>
 
       <!-- 수주 진척 -->
@@ -734,6 +733,7 @@ function go(){
   TAPPED2026=new Set(rawA.filter(a=>String(a.actYM||a.actDate||'').slice(0,4)==='2026').map(a=>a.companyId).filter(v=>v!=null&&v!==''));
   rSummary(L,W,A,Ae,mon,workDays,mgr);
   rTapping(L);
+  rTapMgr();
   rLeadTree(L);
   rStatus(L);
   rContKPI(A,Ae,workDays,mon);
@@ -894,36 +894,12 @@ function rWeekBar(id,kind,mgr,curM,prvM){
     {label:`${+curM.split('-')[1]}월`,data:C,color:'#D97757'},
   ],{money:K.money,tfmt:v=>v.toLocaleString()+(K.money?'만원':'건'),padTop:26});
 }
-// 담당자별 일자별 컨택 누적 — 전체 폭 대형 멀티라인 (모든 담당자)
-const MGR_COLORS=['#D97757','#6B8E9E','#8A9A5B','#C08497','#9B8BbD','#D4A15E','#5F9EA0','#B5838D','#7A9E7E','#C9866B'];
+// 컨택 추이 대형 차트 — 당월 vs 전월 일자별 누적 (담당자 필터 연동, 전체=팀 합계 / 선택=그 사람)
 function rMgrTrend(){
-  const{grid,text}=gc();const cv=document.getElementById('mgrTrendC');if(!cv)return;
-  const mon=document.getElementById('monSel').value, curM=curYMof(mon);
-  const sel=document.getElementById('mgrSel').value;
-  const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`,todayISO=`${todayYM}-${pad2(now.getDate())}`;
-  const[cy,cm]=curM.split('-').map(Number),last=new Date(cy,cm,0).getDate();
-  const labels=Array.from({length:last},(_,i)=>`${i+1}`);
-  const mgrs=[...new Set(rawA.map(a=>a.manager).filter(Boolean))].sort();
-  const upto=curM===todayYM?todayISO:null;
-  const ds=mgrs.map((m,i)=>{
-    const arr=cumByCalendar('contact',m,curM,upto);
-    while(arr.length<last)arr.push(null);
-    const on=(sel==='all'||sel===m);
-    const col=MGR_COLORS[i%MGR_COLORS.length];
-    return {label:m,data:arr,borderColor:on?col:col+'55',backgroundColor:'transparent',
-      borderWidth:on?3:1.5,pointRadius:0,tension:.25,spanGaps:false};
-  });
-  set('mgrTrendSub',`${cm}월 · 담당자별 누적 컨택${sel!=='all'?` · ${sel} 강조`:''}`);
-  if(charts.mgrTrend)charts.mgrTrend.destroy();
-  charts.mgrTrend=new Chart(cv,{type:'line',data:{labels,datasets:ds},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',axis:'x',intersect:false},
-      onClick:(e,el)=>{if(el.length)selectManager(ds[el[0].datasetIndex].label);},
-      layout:{padding:{top:6,right:10}},
-      plugins:{legend:{display:true,position:'top',labels:{color:text,font:{size:11},boxWidth:12,padding:10,usePointStyle:true}},
-        tooltip:{callbacks:{label:ctx=>ctx.parsed.y==null?null:` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y)}건`}}},
-      scales:{x:{grid:{display:false},ticks:{color:text,font:{size:10},autoSkip:true,maxTicksLimit:12,maxRotation:0}},
-              y:{grid:{color:grid},ticks:{color:text,font:{size:10}},beginAtZero:true,grace:'8%'}}}
-  });
+  const mon=document.getElementById('monSel').value, mgr=document.getElementById('mgrSel').value;
+  const curM=curYMof(mon), prvM=prevYM(curM), cm=+curM.split('-')[1];
+  rDailyLine('mgrTrendC','contact',mgr,curM,prvM);   // 당월 vs 전월, 필터 연동
+  set('mgrTrendSub', mgr==='all'?`${cm}월 팀 전체 · 전월 대비 일자별 누적 컨택`:`${mgr} · ${cm}월 vs 전월 일자별 누적 컨택`);
 }
 // 연간 영업일 캘린더
 function rBizCalendar(){
@@ -946,7 +922,7 @@ function renderProgress(){
   rBizCalendar();
   rMgrTrend();
   set('paceCtx',`${+curM.split('-')[1]}월 ${elapsedBizOf(curM)}영업일차 / 총 ${bizCountOf(curM)}영업일 · 전월 동일 영업일차와 비교`);
-  rPaceKPI('contactPaceKPI','contact',mgr,curM,prvM); rDailyLine('contactDailyC','contact',mgr,curM,prvM); rWeekBar('contactWeekC','contact',mgr,curM,prvM);
+  rPaceKPI('contactPaceKPI','contact',mgr,curM,prvM); rWeekBar('contactWeekC','contact',mgr,curM,prvM);
   rPaceKPI('wonPaceKPI','won',mgr,curM,prvM);  rDailyLine('wonDailyC','won',mgr,curM,prvM);  rWeekBar('wonWeekC','won',mgr,curM,prvM);
   rPaceKPI('execPaceKPI','exec',mgr,curM,prvM); rDailyLine('execDailyC','exec',mgr,curM,prvM); rWeekBar('execWeekC','exec',mgr,curM,prvM);
 }
@@ -974,6 +950,25 @@ function rTapping(L){
     <div class="tap-top"><span class="tap-lbl">리드 탭핑률 <span style="font-size:10px;color:var(--t3);">(2026년 1회+ 활동)</span></span><span class="tap-val">${pct.toFixed(0)}%</span></div>
     <div class="tap-bar"><div class="tap-fill" style="width:${pct}%;"></div></div>
     <div class="tap-sub">보유 ${fmtN(tot)}개 중 ${fmtN(tapped)}개 탭핑 · 미탭핑 ${fmtN(tot-tapped)}개</div>`);
+}
+
+// 영업자별 리드 탭핑률 (보유 대비 2026 활동) — 전 담당자 비교(필터 무관)
+function rTapMgr(){
+  const{grid,text,axis}=gc();const cv=document.getElementById('tapMgrC');if(!cv)return;
+  const map={};
+  rawL.forEach(l=>{if(!l.manager)return;const m=map[l.manager]||(map[l.manager]={tot:0,tap:0});m.tot++;if(TAPPED2026.has(l.companyId))m.tap++;});
+  const arr=Object.keys(map).map(m=>({m,tot:map[m].tot,tap:map[m].tap,pct:map[m].tot?map[m].tap/map[m].tot*100:0}));
+  arr.sort((a,b)=>b.pct-a.pct);
+  const labels=arr.map(a=>a.m),data=arr.map(a=>Math.round(a.pct));
+  CHART_LABELS['tapMgrC']={mode:'top',fmt:v=>v+'%'};
+  if(charts.tapMgr)charts.tapMgr.destroy();
+  charts.tapMgr=new Chart(cv,{type:'bar',data:{labels,datasets:[{data,backgroundColor:'#D97757',borderRadius:4,maxBarThickness:46}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
+      onClick:(e,el)=>{if(el.length)selectManager(labels[el[0].index]);},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const a=arr[ctx.dataIndex];return ` 탭핑 ${a.tap}/${a.tot}개 (${Math.round(a.pct)}%)`;}}}},
+      scales:{x:{grid:{display:false},ticks:{color:axis,font:{size:12,weight:'600'}}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:10},callback:v=>v+'%'},beginAtZero:true,max:100,grace:'5%'}}}
+  });
 }
 
 function rLeadTree(L){
