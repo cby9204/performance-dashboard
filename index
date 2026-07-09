@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세일즈 퍼포먼스</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --p:#D97757;--pl:#FEF3EE;--pd:#C2570B;
+  --bg:#FAFAF9;--sf:#FFFFFF;--sf1:#F5F5F4;--sf2:#EEEDE9;
+  --bd:#E7E5E4;--t1:#1C1917;--t2:#78716C;--t3:#A8A29E;
+}
+.dark{
+  --bg:#111110;--sf:#1A1A18;--sf1:#242422;--sf2:#2E2E2C;
+  --bd:#2E2E2C;--t1:#F5F5F4;--t2:#A8A29E;--t3:#57534E;
+  --pl:#2A1A14;--pd:#F0A07A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:13px;line-height:1.5;}
+
+/* ── 탑바 ── */
+.topbar{position:sticky;top:0;z-index:100;background:var(--sf);border-bottom:0.5px solid var(--bd);height:52px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-l{display:flex;align-items:center;gap:20px;}
+.logo{font-size:14px;font-weight:700;color:var(--p);}
+.tabs{display:flex;gap:2px;}
+.tab{padding:6px 16px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--t2);border:0.5px solid transparent;transition:all .15s;}
+.tab.active{background:var(--pl);color:var(--p);border-color:var(--p);}
+.tab:hover:not(.active){background:var(--sf1);}
+.topbar-r{display:flex;align-items:center;gap:10px;}
+.ts{font-size:11px;color:var(--t3);}
+select{height:32px;font-size:12px;padding:0 10px;border:0.5px solid var(--bd);border-radius:6px;background:var(--sf);color:var(--t1);font-family:inherit;outline:none;cursor:pointer;}
+.rbtn{height:32px;padding:0 12px;font-size:12px;font-weight:600;border:0.5px solid var(--bd);border-radius:6px;background:var(--sf);color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;transition:all .15s;}
+.rbtn:hover{border-color:var(--p);color:var(--p);}
+.rbtn.loading{opacity:.5;pointer-events:none;}
+.thbtn{width:32px;height:32px;border:0.5px solid var(--bd);border-radius:6px;background:transparent;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+
+/* ── 탭 페이지 ── */
+.page{display:none;}
+.page.active{display:block;}
+.iframe-wrap{width:100%;height:calc(100vh - 52px);}
+.iframe-wrap iframe{width:100%;height:100%;border:none;}
+
+/* ── 퍼포먼스 ── */
+.perf{padding:0 24px 32px;display:flex;flex-direction:column;gap:0;}
+
+/* ── Summary 바 ── */
+.summary-bar{
+  display:flex;align-items:center;gap:0;
+  background:var(--sf);border-bottom:0.5px solid var(--bd);
+  padding:0;margin:0;
+  position:sticky;top:52px;z-index:90;overflow-x:auto;
+}
+.summary-bar::-webkit-scrollbar{display:none;}
+.sb-item{
+  flex:1;min-width:130px;padding:12px 20px;
+  border-right:0.5px solid var(--bd);
+  display:flex;flex-direction:column;gap:2px;
+}
+.sb-item:last-child{border-right:none;}
+.sb-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;}
+.sb-val{font-size:18px;font-weight:700;color:var(--t1);}
+.sb-val.p{color:var(--p);}
+.sb-sub{font-size:10px;color:var(--t3);}
+
+/* ── 섹션 구분 ── */
+.sec{margin-top:28px;display:flex;flex-direction:column;gap:14px;}
+.sec-hdr{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+.sec-step{font-size:10px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.1em;}
+.sec-title{font-size:15px;font-weight:700;color:var(--t1);}
+.sec-line{flex:1;height:0.5px;background:var(--bd);}
+
+/* ── 카드 ── */
+.card{background:var(--sf);border:0.5px solid var(--bd);border-radius:12px;overflow:hidden;}
+.ch{padding:14px 18px;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.ct{font-size:13px;font-weight:600;color:var(--t1);}
+.cs{font-size:11px;color:var(--t3);}
+.cb{padding:16px 18px;}
+
+/* ── 그리드 ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+
+/* ── KPI 미니 카드 ── */
+.mkpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.mkpi{background:var(--sf);border:0.5px solid var(--bd);border-radius:10px;padding:14px 16px;}
+.mkpi-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.mkpi-val{font-size:24px;font-weight:700;color:var(--t1);line-height:1;}
+.mkpi-val.p{color:var(--p);}
+.mkpi-sub{font-size:13px;color:var(--t2);margin-top:6px;}
+
+/* ── 보유 리드 트리 ── */
+.ltree{display:flex;flex-direction:column;gap:0;}
+.lrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--bd);}
+.lrow:last-child{border-bottom:none;}
+.lrow-ind{display:flex;align-items:center;justify-content:space-between;padding:7px 0 7px 16px;border-bottom:0.5px solid var(--bd);}
+.lrow-ind:last-child{border-bottom:none;}
+.lname{font-size:13px;color:var(--t2);}
+.lname-s{font-size:12px;color:var(--t2);}
+.lnum{font-size:22px;font-weight:700;color:var(--t1);}
+.lnum-s{font-size:17px;font-weight:600;color:var(--t2);}
+.lpct{font-size:12px;color:var(--t2);margin-left:6px;}
+
+/* ── 활동상태 분포 ── */
+.slist{display:flex;flex-direction:column;gap:0;}
+.srow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.srow:last-child{border-bottom:none;}
+.sname{font-size:12px;color:var(--t2);width:72px;flex-shrink:0;}
+.sbar-bg{flex:1;height:6px;background:var(--sf1);border-radius:9999px;overflow:hidden;}
+.sbar-f{height:100%;border-radius:9999px;background:var(--p);}
+.scnt{font-size:18px;font-weight:700;color:var(--t1);width:48px;text-align:right;flex-shrink:0;}
+
+/* ── 컨택 비중 바 ── */
+.ctype-list{display:flex;flex-direction:column;gap:0;}
+.ctrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.ctrow:last-child{border-bottom:none;}
+.ctname{font-size:12px;color:var(--t2);width:80px;flex-shrink:0;}
+.ctbar-bg{flex:1;height:6px;background:var(--sf1);border-radius:9999px;overflow:hidden;}
+.ctbar-f{height:100%;border-radius:9999px;background:var(--p);}
+.ctval{font-size:14px;font-weight:700;color:var(--t1);width:36px;text-align:right;flex-shrink:0;}
+.ctpct{font-size:12px;color:var(--t2);width:36px;text-align:right;flex-shrink:0;}
+
+/* ── 차트 ── */
+.chart-wrap{position:relative;}
+.chart-wrap.h160{height:160px;}
+.chart-wrap.h200{height:200px;}
+.chart-wrap.h240{height:240px;}
+.chart-wrap.h280{height:280px;}
+.chart-wrap.h300{height:300px;}
+.chart-wrap.h340{height:340px;}
+
+/* ── 수주 상세 셀 ── */
+.won-cells{display:flex;flex-direction:column;gap:0;}
+.wcrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--bd);}
+.wcrow:last-child{border-bottom:none;}
+.wcname{font-size:12px;color:var(--t2);}
+.wcval{font-size:19px;font-weight:700;color:var(--t1);}
+.wcval.p{color:var(--p);}
+.wcsub{font-size:12px;color:var(--t2);margin-top:3px;}
+
+/* ── 전환율 ── */
+.conv-g{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px;}
+.conv-item{background:var(--sf1);border-radius:8px;padding:14px 16px;}
+.conv-lbl{font-size:11px;color:var(--t2);margin-bottom:6px;font-weight:500;}
+.conv-cnt{font-size:22px;font-weight:700;color:var(--t1);line-height:1.1;}
+.conv-rate{font-size:13px;color:var(--p);font-weight:600;margin-top:5px;}
+
+/* ── 포캐스팅 ── */
+.fc-list{display:flex;flex-direction:column;gap:0;}
+.fc-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--bd);}
+.fc-row:last-child{border-bottom:none;}
+.fc-stage{font-size:13px;font-weight:600;color:var(--t1);}
+.fc-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+.fc-right{text-align:right;}
+.fc-cnt{font-size:13px;color:var(--t2);}
+.fc-amt{font-size:20px;font-weight:700;color:var(--p);}
+.fc-total{margin-top:14px;background:var(--pl);border:0.5px solid var(--p);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.fc-tlbl{font-size:12px;color:var(--pd);font-weight:500;}
+.fc-tval{font-size:22px;font-weight:700;color:var(--p);}
+
+/* ── 도넛 ── */
+.dw{display:flex;align-items:center;gap:18px;padding:4px 0;}
+.dc{width:88px;height:88px;flex-shrink:0;}
+.dl{display:flex;flex-direction:column;gap:10px;flex:1;}
+.dleg{display:flex;align-items:center;gap:8px;}
+.ddot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dname{font-size:13px;color:var(--t2);flex:1;}
+.dval{font-size:15px;font-weight:700;color:var(--t1);}
+.dpct{font-size:12px;color:var(--t2);margin-left:3px;}
+
+/* ── 객단가 ── */
+.unit-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+.unit-item{background:var(--sf1);border-radius:8px;padding:12px 14px;}
+.unit-lbl{font-size:11px;color:var(--t3);margin-bottom:5px;}
+.unit-val{font-size:19px;font-weight:700;color:var(--t1);}
+
+/* ── 테이블 ── */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--bd);white-space:nowrap;}
+td{padding:11px 14px;border-bottom:0.5px solid var(--bd);font-size:12px;color:var(--t1);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--sf1);}
+.badge{font-size:11px;padding:2px 8px;border-radius:9999px;font-weight:500;white-space:nowrap;}
+.b-p{background:var(--pl);color:var(--pd);}
+.b-g{background:var(--sf1);color:var(--t2);}
+.fold-btn{width:100%;padding:10px;font-size:12px;color:var(--t3);background:var(--sf1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;border-top:0.5px solid var(--bd);font-family:inherit;transition:color .15s;}
+.fold-btn:hover{color:var(--p);}
+
+/* ── 목표 설정 ── */
+.goal-box{background:var(--sf1);border-radius:10px;padding:14px 16px;margin-top:12px;}
+.goal-box-title{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.goal-split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.goal-inputs{display:flex;flex-direction:column;gap:10px;}
+.goal-inp-row{display:flex;align-items:center;gap:8px;}
+.goal-lbl{font-size:12px;color:var(--t2);font-weight:500;width:52px;flex-shrink:0;}
+.goal-inp{height:30px;width:90px;border:0.5px solid var(--bd);border-radius:6px;background:var(--sf);padding:0 8px;font-size:13px;color:var(--t1);font-family:inherit;outline:none;text-align:right;}
+.goal-inp:focus{border-color:var(--p);}
+.goal-unit{font-size:11px;color:var(--t2);}
+.goal-progress-area{display:flex;flex-direction:column;gap:12px;}
+.goal-prog-item{}
+.goal-bar-info{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.goal-prog-lbl{font-size:11px;color:var(--t2);}
+.goal-cur{font-size:14px;font-weight:700;color:var(--t1);}
+.goal-pct{font-size:14px;font-weight:700;color:var(--p);}
+.goal-bar-bg{height:10px;background:var(--sf);border:0.5px solid var(--bd);border-radius:9999px;overflow:hidden;}
+.goal-bar-fill{height:100%;background:var(--p);border-radius:9999px;transition:width .4s ease;}
+.goal-save-row{display:flex;justify-content:flex-end;margin-top:14px;}
+.goal-save{height:30px;padding:0 14px;font-size:12px;font-weight:600;border:0.5px solid var(--p);border-radius:6px;background:var(--pl);color:var(--pd);cursor:pointer;font-family:inherit;transition:all .15s;}
+.goal-save:hover{background:var(--p);color:#fff;}
+
+/* ── 영업자 비교 ── */
+.cmp{padding:24px;display:flex;flex-direction:column;gap:20px;}
+.cmp-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.cmp-title-wrap{display:flex;flex-direction:column;gap:3px;}
+.cmp-title{font-size:16px;font-weight:700;color:var(--t1);}
+.cmp-note{font-size:11px;color:var(--t3);}
+.cmp-metric-tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--sf1);padding:4px;border-radius:8px;}
+.cmp-mtab{padding:6px 12px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--t2);border:0.5px solid transparent;transition:all .15s;white-space:nowrap;}
+.cmp-mtab.active{background:var(--sf);color:var(--p);border-color:var(--p);font-weight:600;}
+.cmp-mtab:hover:not(.active){color:var(--t1);}
+
+/* 시상대 */
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.pod{background:var(--sf);border:0.5px solid var(--bd);border-radius:12px;padding:18px 18px 16px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;}
+.pod::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--bd);}
+.pod.r1::before{background:linear-gradient(90deg,#E8B14C,#F5CE7A);}
+.pod.r2::before{background:linear-gradient(90deg,#9CA3AF,#C4C9D0);}
+.pod.r3::before{background:linear-gradient(90deg,#C08457,#D9A878);}
+.pod-top{display:flex;align-items:center;gap:10px;}
+.pod-medal{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;}
+.pod.r1 .pod-medal{background:#FBEFD3;color:#B8860B;}
+.pod.r2 .pod-medal{background:#EDEFF2;color:#6B7280;}
+.pod.r3 .pod-medal{background:#F3E3D5;color:#A0653A;}
+.dark .pod.r1 .pod-medal{background:#3A2E14;color:#F5CE7A;}
+.dark .pod.r2 .pod-medal{background:#2A2C30;color:#C4C9D0;}
+.dark .pod.r3 .pod-medal{background:#33241A;color:#D9A878;}
+.pod-name{font-size:15px;font-weight:700;color:var(--t1);}
+.pod-rank-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;}
+.pod-main{font-size:26px;font-weight:700;color:var(--p);line-height:1;}
+.pod-metric-lbl{font-size:11px;color:var(--t2);}
+.pod-mini{display:flex;gap:16px;margin-top:2px;padding-top:10px;border-top:0.5px solid var(--bd);}
+.pod-mini-item{display:flex;flex-direction:column;gap:2px;}
+.pod-mini-v{font-size:13px;font-weight:600;color:var(--t1);}
+.pod-mini-l{font-size:10px;color:var(--t3);}
+
+/* 비교 차트 */
+.cmp-chart-wrap{position:relative;width:100%;}
+
+/* 랭킹 테이블 */
+.rank-table{width:100%;border-collapse:collapse;}
+.rank-table th{padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;border-bottom:0.5px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s;}
+.rank-table th:first-child,.rank-table th.tl{text-align:left;}
+.rank-table th:hover{color:var(--p);}
+.rank-table th.sorted{color:var(--p);}
+.rank-table th .arr{font-size:9px;margin-left:3px;opacity:.7;}
+.rank-table td{padding:10px 12px;border-bottom:0.5px solid var(--bd);font-size:12px;color:var(--t1);text-align:right;white-space:nowrap;vertical-align:middle;}
+.rank-table td:first-child,.rank-table td.tl{text-align:left;}
+.rank-table tr:last-child td{border-bottom:none;}
+.rank-table tbody tr:hover td{background:var(--sf1);}
+.rank-table tbody tr.me td{background:var(--pl);}
+.rk-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:700;background:var(--sf1);color:var(--t2);}
+.rk-badge.top{background:var(--pl);color:var(--pd);}
+.rk-name{font-size:13px;font-weight:600;color:var(--t1);}
+.cell-bar-wrap{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+.cell-bar-bg{width:52px;height:5px;background:var(--sf1);border-radius:9999px;overflow:hidden;flex-shrink:0;}
+.cell-bar-f{height:100%;background:var(--p);border-radius:9999px;opacity:.55;}
+.cell-val{min-width:56px;text-align:right;font-weight:600;}
+.cell-val.hl{color:var(--p);}
+
+@media(max-width:860px){
+  .podium{grid-template-columns:1fr;}
+  .cmp{padding:16px;}
+}
+
+/* 유틸 */
+.spin{width:14px;height:14px;border:2px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ld{display:flex;align-items:center;justify-content:center;height:100px;gap:8px;color:var(--t3);font-size:12px;}
+.empty{display:flex;align-items:center;justify-content:center;height:80px;color:var(--t3);font-size:12px;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-l">
+    <span class="logo">자소설 영업</span>
+    <div class="tabs">
+      <div class="tab active" id="tabPerf" onclick="sw('perf')">퍼포먼스</div>
+    </div>
+  </div>
+  <div class="topbar-r">
+    <span class="ts">담당자</span>
+    <select id="mgrSel" onchange="go()"><option value="all">전체</option></select>
+    <span class="ts">기간</span>
+    <select id="monSel" onchange="go()">
+      <option value="2026-05">2026년 5월</option>
+      <option value="2026-06" selected>2026년 6월</option>
+      <option value="all">전체 (5월~)</option>
+    </select>
+    <button class="rbtn" id="rfBtn" onclick="load()">↻ 새로고침</button>
+    <button class="thbtn" id="thBtn" onclick="toggleTheme()">☀️</button>
+    <span class="ts" id="lastUp"></span>
+  </div>
+</header>
+
+<!-- 퍼포먼스 탭 -->
+<div class="page active" id="pagePerf">
+
+  <!-- Summary 바 -->
+  <div class="summary-bar" id="summaryBar">
+    <div class="sb-item"><div class="sb-lbl">보유 리드</div><div class="sb-val" id="sb0">—</div><div class="sb-sub" id="sb0s"></div></div>
+    <div class="sb-item"><div class="sb-lbl">총 컨택</div><div class="sb-val p" id="sb1">—</div><div class="sb-sub" id="sb1s"></div></div>
+    <div class="sb-item"><div class="sb-lbl">일평균 컨택</div><div class="sb-val" id="sb2">—</div><div class="sb-sub" id="sb2s"></div></div>
+    <div class="sb-item"><div class="sb-lbl">수주 건수</div><div class="sb-val" id="sb3">—</div><div class="sb-sub" id="sb3s"></div></div>
+    <div class="sb-item"><div class="sb-lbl">수주 금액</div><div class="sb-val" id="sb4">—</div><div class="sb-sub" id="sb4s"></div></div>
+    <div class="sb-item"><div class="sb-lbl">집행 매출</div><div class="sb-val p" id="sb5">—</div><div class="sb-sub" id="sb5s"></div></div>
+  </div>
+
+  <div class="perf">
+
+    <!-- ══ STEP 1: 리드 현황 ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">STEP 1</span>
+        <span class="sec-title">리드 현황</span>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="g21">
+        <div class="card">
+          <div class="ch"><span class="ct">보유 리드 분포</span><span class="cs" id="leadTotal"></span></div>
+          <div class="cb">
+            <div class="ltree" id="ltree"><div class="ld"><div class="spin"></div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">활동상태 분포</span><span class="cs" id="sSub"></span></div>
+          <div class="cb">
+            <div class="slist" id="slist"><div class="ld"><div class="spin"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 보유 리드 비교 — 신규 · 재구매</span><span class="cs">막대 높이 = 총 보유 리드 · 막대 클릭 시 해당 영업자 필터</span></div>
+        <div class="cb"><div class="chart-wrap h280"><canvas id="cmpLeadC"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 2: 컨택 현황 ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">STEP 2</span>
+        <span class="sec-title">컨택 현황</span>
+        <div class="sec-line"></div>
+      </div>
+
+      <!-- 컨택 KPI -->
+      <div class="mkpi-row" id="contKPI">
+        <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
+      </div>
+
+      <div class="g21">
+        <div class="card">
+          <div class="ch"><span class="ct">활동 추이</span><span class="cs" id="actSub"></span></div>
+          <div class="cb">
+            <div class="chart-wrap h200"><canvas id="actC"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">컨택 반복 분포</span><span class="cs">기업별 컨택 횟수 (유니크 기업 기준)</span></div>
+          <div class="cb">
+            <div class="ctype-list" id="ctypeList"><div class="ld"><div class="spin"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 컨택 비교 — 총 컨택 vs 유니크 기업</span><span class="cs">막대 위 건수 · 상단 기업당 반복(회/사) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContC"></canvas></div></div>
+      </div>
+
+    </div>
+
+    <!-- ══ STEP 3: 수주 현황 ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">STEP 3</span>
+        <span class="sec-title">수주 현황</span>
+        <div class="sec-line"></div>
+      </div>
+
+      <!-- 수주 KPI -->
+      <div class="mkpi-row" id="wonKPI">
+        <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
+      </div>
+
+      <!-- 수주 추이 + 신규/재구매 상세 -->
+      <div class="g21">
+        <div class="card">
+          <div class="ch"><span class="ct">수주 추이</span><span class="cs" id="wonTrendSub"></span></div>
+          <div class="cb">
+            <div class="chart-wrap h200"><canvas id="wonC"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">수주 상세</span></div>
+          <div class="cb">
+            <div class="won-cells" id="wonCells"><div class="ld"><div class="spin"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 도넛 2개 -->
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">채용 · 교육 비중</span><span class="cs">수주 건수 기준</span></div>
+          <div class="cb"><div class="dw"><div class="dc"><canvas id="catC"></canvas></div><div class="dl" id="catL"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">광고 · 공고 비중</span><span class="cs">수주 건수 기준</span></div>
+          <div class="cb"><div class="dw"><div class="dc"><canvas id="prodC"></canvas></div><div class="dl" id="prodL"></div></div></div>
+        </div>
+      </div>
+
+      <!-- 전환율 -->
+      <div class="card">
+        <div class="ch"><span class="ct">컨택 → 수주 전환율</span><span class="cs">컨택 건수 대비 수주 건수</span></div>
+        <div class="cb">
+          <div class="conv-g" id="convG"><div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+
+      <!-- 객단가 + 포캐스팅 -->
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">평균 객단가</span><span class="cs">수주금액 ÷ 수주건수</span></div>
+          <div class="cb">
+            <div class="unit-row" id="unitRow" style="margin-top:0;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90%</span></div>
+          <div class="cb">
+            <div class="fc-list" id="fcList"><div class="ld"><div class="spin"></div></div></div>
+            <div class="fc-total" id="fcTot" style="display:none;">
+              <span class="fc-tlbl">합산 예상 매출</span>
+              <span class="fc-tval" id="fcV">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 수주 비교 — 수주금액 · 집행매출</span><span class="cs">단위: 만원 · 막대 위 금액/상단 전환율 표기 · 툴팁에서 건수 확인</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonC"></canvas></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 매출 비교 — 신규 · 재구매</span><span class="cs">단위: 만원 · 막대 위 금액 표기 · 툴팁에서 신규 비중 확인</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 평균 객단가</span><span class="cs">수주금액 ÷ 수주건수 · 단위: 만원 · 툴팁에서 수주건수 확인</span></div>
+        <div class="cb"><div class="chart-wrap h280"><canvas id="cmpUnitC"></canvas></div></div>
+      </div>
+
+    </div>
+
+    <!-- ══ 수주 상세 테이블 ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">상세</span>
+        <span class="sec-title">수주 내역</span>
+        <div class="sec-line"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">수주 상세 내역</span><span class="cs" id="tblSub"></span></div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>기업명</th><th>담당자</th><th>상품</th><th>캠페인 ID</th><th>소재</th>
+              <th>수주일</th><th style="text-align:right;">금액</th><th>구분</th>
+            </tr></thead>
+            <tbody id="tbody"><tr><td colspan="8"><div class="ld"><div class="spin"></div></div></td></tr></tbody>
+          </table>
+        </div>
+        <button class="fold-btn" id="foldBtn" style="display:none;" onclick="fold()">▼ 나머지 펼치기</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ★ 배포한 Apps Script 웹앱 주소(.../exec)로 교체하세요
+const GAS='https://script.google.com/macros/s/AKfycbypQoXlkv7F9753BvSZkYb715Tm6L6XZ_fv1L0pBb3_JpNvGjKYYjMceJA0ro4P_0n2ew/exec';
+let AVG_PRICE=4619685; // 로드 시 실데이터 평균 객단가로 갱신
+let rawL=[],rawW=[],rawA=[],rawExec=[],MONTHS=[],charts={},thisW=[],otherW=[],folded=true;
+
+const dark=()=>document.documentElement.classList.contains('dark');
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.getElementById('thBtn').textContent=dark()?'☀️':'🌙';
+  Object.values(charts).forEach(c=>c&&c.destroy&&c.destroy());
+  charts={};go();
+}
+function sw(t){
+  ['perf'].forEach(x=>{
+    document.getElementById('tab'+x[0].toUpperCase()+x.slice(1)).classList.toggle('active',x===t);
+    document.getElementById('page'+x[0].toUpperCase()+x.slice(1)).classList.toggle('active',x===t);
+  });
+}
+
+async function load(){
+  const btn=document.getElementById('rfBtn');
+  btn.classList.add('loading');
+  try{
+    const j=await fetch(GAS).then(r=>r.json());
+    rawL=j.leads||[]; rawA=j.activities||[]; rawW=j.deals||[]; rawExec=j.execMonthly||[];
+    if(rawW.length) AVG_PRICE=rawW.reduce((s,w)=>s+(Number(w.amount)||0),0)/rawW.length||AVG_PRICE;
+    document.getElementById('lastUp').textContent=(j.meta&&j.meta.generatedAt)?('갱신 '+j.meta.generatedAt):new Date().toLocaleTimeString('ko-KR');
+    buildMonths(); fillMgr(); go();
+  }catch(e){ console.error(e); sample(); }
+  btn.classList.remove('loading');
+}
+
+// 데이터에 존재하는 월로 기간 셀렉트 자동 구성
+function buildMonths(){
+  const s=new Set();
+  rawW.forEach(w=>w.wonYM&&s.add(w.wonYM));
+  rawExec.forEach(e=>e.ym&&s.add(e.ym));
+  rawA.forEach(a=>a.actYM&&s.add(a.actYM));
+  MONTHS=[...s].sort();
+  const sel=document.getElementById('monSel'),cur=sel.value;
+  sel.innerHTML='';
+  MONTHS.forEach(ym=>{const[y,m]=ym.split('-');const o=document.createElement('option');o.value=ym;o.textContent=`${y}년 ${+m}월`;sel.appendChild(o);});
+  const ao=document.createElement('option');ao.value='all';ao.textContent='전체';sel.appendChild(ao);
+  const defM=[...new Set(rawW.map(w=>w.wonYM).filter(Boolean))].sort().pop()||MONTHS[MONTHS.length-1]||'all';
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur; else sel.value=defM;
+}
+
+function sample(){
+  const mgrs=['이현보','김도담','한태윤','정두연','이민진','박준영','한지선','한원'];
+  const stats=['콜드액션','웜리드','제안발송','견적발송','구매예정','보류','재시도'];
+  const sw=[50,20,10,6,4,9,7];
+  const cats=['채용','비채용'];const prods=['광고'];
+  const cos=['삼성전자','LG화학','현대자동차','SK텔레콤','카카오','네이버','쿠팡','배달의민족','롯데','포스코'];
+  const MOS=['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07'];
+  rawL=[];
+  mgrs.forEach(m=>{
+    for(let i=0;i<Math.floor(Math.random()*120)+40;i++){
+      const re=Math.random()>.6;const cid='C'+String(~~(Math.random()*600)+1).padStart(4,'0');
+      rawL.push({manager:m,contractType:re?'재구매':'신규',companyId:cid,
+        category:re?cats[~~(Math.random()*2)]:'',
+        activityStatus:stats[wr(sw)],contactStatus:Math.random()>.45?'컨택 완료':'컨택 필요'});
+    }
+  });
+  rawW=[];
+  for(let i=0;i<400;i++){
+    const m=mgrs[~~(Math.random()*8)];const ym=MOS[~~(Math.random()*MOS.length)];
+    const re=Math.random()>.55;const d=~~(Math.random()*25)+1;
+    rawW.push({manager:m,companyName:cos[~~(Math.random()*10)],campaignId:10000+i,
+      wonDate:`${ym}-${String(d).padStart(2,'0')}`,wonYM:ym,
+      amount:(~~(Math.random()*80)+10)*100000,
+      productType:prods[0],category:cats[~~(Math.random()*2)],isNewRevenue:!re});
+  }
+  // 집행매출: 담당자×월 (수주와 다른 분포)
+  rawExec=[];
+  mgrs.forEach(m=>MOS.forEach(ym=>rawExec.push({manager:m,ym,amount:(~~(Math.random()*3000)+300)*10000})));
+  rawA=[];
+  for(let i=0;i<1600;i++){
+    const m=mgrs[~~(Math.random()*8)];const ym=MOS[~~(Math.random()*MOS.length)];
+    const d=~~(Math.random()*27)+1;const cid='C'+String(~~(Math.random()*400)+1).padStart(4,'0');
+    rawA.push({manager:m,actYM:ym,actDate:`${ym}-${String(d).padStart(2,'0')}`,companyId:cid});
+  }
+  document.getElementById('lastUp').textContent='샘플 데이터';
+  buildMonths();fillMgr();go();
+}
+
+function wr(w){let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}return w.length-1;}
+
+function fillMgr(){
+  const sel=document.getElementById('mgrSel'),cur=sel.value;
+  const ms=[...new Set(rawL.map(l=>l.manager).filter(Boolean))].sort();
+  sel.innerHTML='<option value="all">전체</option>';
+  ms.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+  if(ms.includes(cur))sel.value=cur;
+}
+
+function go(){
+  const mgr=document.getElementById('mgrSel').value;
+  const mon=document.getElementById('monSel').value;
+  const fl=l=>mgr==='all'||l.manager===mgr;
+  const fw=w=>{if(mgr!=='all'&&w.manager!==mgr)return false;return mon==='all'||w.wonYM===mon;};
+  const fa=a=>{if(mgr!=='all'&&a.manager!==mgr)return false;return mon==='all'||a.actYM===mon;};
+  const L=rawL.filter(fl),W=rawW.filter(fw),A=rawA.filter(fa);
+
+  // companyId → lead 정보 맵
+  const cmap={};
+  rawL.filter(fl).forEach(l=>{if(l.companyId)cmap[l.companyId]={ct:l.contractType,cat:l.category};});
+  const Ae=A.map(a=>({...a,...(cmap[a.companyId]||{ct:'',cat:''})}));
+
+  // 기간 내 영업일수 계산 (월~금, 대략)
+  const workDays=getWorkDays(mon);
+
+  folded=true;thisW=[];otherW=[];
+
+  rSummary(L,W,A,Ae,mon,workDays,mgr);
+  rLeadTree(L);
+  rStatus(L);
+  rContKPI(A,Ae,workDays,mon);
+  rActChart(mgr,mon,workDays);
+  rCtypeList(Ae);
+  rWonKPI(W,A,Ae,mon,workDays,mgr);
+  rWonChart(mgr,mon);
+  rWonCells(W,mon);
+  rDonut('catC','catL',W,'category',['채용','비채용'],['#D97757','#78716C']);
+  rDonut('prodC','prodL',W,'productType',['광고','공고'],['#D97757','#78716C']);
+  rConv(W,A,Ae);
+  rUnit(W);
+  rFc(L);
+  rTable(W,mon);
+  renderCompare();
+}
+
+function bizDays(ym){
+  const now=new Date();const[y,m]=ym.split('-').map(Number);
+  let end=new Date(y,m,0).getDate();
+  if(y===now.getFullYear()&&m===now.getMonth()+1)end=now.getDate();
+  let cnt=0;for(let d=1;d<=end;d++){const dow=new Date(y,m-1,d).getDay();if(dow!==0&&dow!==6)cnt++;}
+  return cnt;
+}
+function getWorkDays(mon){
+  if(mon==='all')return Math.max(1,MONTHS.reduce((s,ym)=>s+bizDays(ym),0));
+  return bizDays(mon)||1;
+}
+// 집행매출 합계 (담당자/기간)
+function execSum(mgr,mon){
+  return rawExec.filter(e=>(mgr==='all'||e.manager===mgr)&&(mon==='all'||e.ym===mon))
+                .reduce((s,e)=>s+(Number(e.amount)||0),0);
+}
+function curYMof(mon){return mon==='all'?(MONTHS[MONTHS.length-1]||''):mon;}
+
+function fmt(n){return Math.round(n/10000).toLocaleString()+'만원';}
+function fmtN(n){return Number(n).toLocaleString();}
+function rate(n,d){return d>0?((n/d)*100).toFixed(1)+'%':'—';}
+function nextM(ym){const[y,m]=ym.split('-').map(Number);return`${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}`;}
+function gc(){const d=dark();return{grid:d?'#2A2A28':'#EFEFED',text:d?'#78716C':'#A8A29E',bar:d?'#5C3D2C':'#D97757',line:d?'#787672':'#78716C'};}
+
+function rSummary(L,W,A,Ae,mon,wd,mgr){
+  const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const exec=execSum(mgr,mon);
+  const nW=W.filter(w=>w.isNewRevenue).length;
+  const rW=W.length-nW;
+  set('sb0',fmtN(L.length));set('sb0s',`신규 ${fmtN(L.filter(l=>l.contractType==='신규').length)} · 재구매 ${fmtN(L.filter(l=>l.contractType==='재구매').length)}`);
+  set('sb1',fmtN(A.length));set('sb1s','컨택 건수');
+  set('sb2',(A.length/wd).toFixed(1)+'건');set('sb2s','일평균');
+  set('sb3',W.length+'건');set('sb3s',`신규 ${nW} · 재구매 ${rW}`);
+  set('sb4',fmt(wAmt));set('sb4s','수주 기준');
+  set('sb5',fmt(exec));set('sb5s','집행 기준');
+}
+
+function rLeadTree(L){
+  const tot=L.length;
+  const nL=L.filter(l=>l.contractType==='신규').length;
+  const rL=L.filter(l=>l.contractType==='재구매').length;
+  const rEdu=L.filter(l=>l.contractType==='재구매'&&l.category==='교육').length;
+  const rRec=L.filter(l=>l.contractType==='재구매'&&l.category==='채용').length;
+  const con=L.filter(l=>l.contactStatus==='컨택 완료').length;
+  const unc=tot-con;
+  set('leadTotal',`전체 ${fmtN(tot)}개`);
+  set('ltree',`
+    <div class="lrow"><span class="lname">신규</span><span><span class="lnum">${fmtN(nL)}</span><span class="lpct">${tot?(nL/tot*100).toFixed(0):0}%</span></span></div>
+    <div class="lrow"><span class="lname">재구매</span><span><span class="lnum">${fmtN(rL)}</span><span class="lpct">${tot?(rL/tot*100).toFixed(0):0}%</span></span></div>
+    <div class="lrow-ind"><span class="lname-s">└ 채용</span><span class="lnum-s">${fmtN(rRec)}<span class="lpct">${rL?(rRec/rL*100).toFixed(0):0}%</span></span></div>
+    <div class="lrow-ind"><span class="lname-s">└ 교육</span><span class="lnum-s">${fmtN(rEdu)}<span class="lpct">${rL?(rEdu/rL*100).toFixed(0):0}%</span></span></div>
+    <div class="lrow"><span class="lname">컨택 완료 <span style="font-size:10px;color:var(--t3);">(60일)</span></span><span><span class="lnum">${fmtN(con)}</span><span class="lpct">${tot?(con/tot*100).toFixed(0):0}%</span></span></div>
+    <div class="lrow" style="border-bottom:none;"><span class="lname">미컨택</span><span><span class="lnum" style="color:var(--p);">${fmtN(unc)}</span><span class="lpct">${tot?(unc/tot*100).toFixed(0):0}%</span></span></div>
+  `);
+}
+
+function rStatus(L){
+  const stats=['콜드액션','웜리드','제안발송','견적발송','구매예정','보류','재시도'];
+  const ops=[0.3,0.42,0.6,0.72,0.85,0.35,0.4];
+  const cnts=stats.map(s=>L.filter(l=>l.activityStatus===s).length);
+  const max=Math.max(...cnts,1);
+  set('sSub',`전체 ${fmtN(L.length)}개`);
+  set('slist',stats.map((s,i)=>`
+    <div class="srow">
+      <span class="sname">${s}</span>
+      <div class="sbar-bg"><div class="sbar-f" style="width:${cnts[i]/max*100}%;opacity:${ops[i]};"></div></div>
+      <span class="scnt">${fmtN(cnts[i])}</span>
+    </div>`).join(''));
+}
+
+function rContKPI(A,Ae,wd,mon){
+  const tot=A.length;
+  const uniq=new Set(A.map(a=>a.companyId).filter(Boolean)).size;
+  const dailyAvg=(tot/wd).toFixed(1);
+  const perCo=uniq?(tot/uniq).toFixed(1):'—';
+  set('contKPI',`
+    <div class="mkpi"><div class="mkpi-lbl">총 컨택 (중복 포함)</div><div class="mkpi-val">${fmtN(tot)}건</div><div class="mkpi-sub">활동 로그 건수</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">유니크 기업</div><div class="mkpi-val p">${fmtN(uniq)}개</div><div class="mkpi-sub">Company ID 기준</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">일평균 컨택</div><div class="mkpi-val">${dailyAvg}건</div><div class="mkpi-sub">영업일 기준</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">기업당 컨택</div><div class="mkpi-val">${perCo}회</div><div class="mkpi-sub">총 ÷ 유니크</div></div>
+  `);
+}
+
+function rActChart(mgr,mon,wd){
+  const mos=MONTHS,lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const d=mos.map(ym=>rawA.filter(a=>(mgr==='all'||a.manager===mgr)&&a.actYM===ym).length);
+  const avgD=mos.map((ym,i)=>(d[i]/(bizDays(ym)||1)).toFixed(1));
+  const{grid,text,bar}=gc();
+  const idx=mos.indexOf(mon);
+  set('actSub',mon==='all'?`${mos.length}개월`:`일평균 ${avgD[idx]||'0'}건`);
+  CHART_LABELS['actC']={mode:'top',fmt:v=>fmtN(v)};
+  if(charts.act)charts.act.destroy();
+  charts.act=new Chart(document.getElementById('actC'),{
+    type:'bar',
+    data:{labels:lbs,datasets:[{label:'활동 건수',data:d,backgroundColor:bar,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:ctx=>`일평균: ${avgD[ctx.dataIndex]}건`}}},
+      scales:{x:{grid:{color:grid},ticks:{color:text,font:{size:11}}},y:{grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true}}}
+  });
+}
+
+function rCtypeList(Ae){
+  const freq={};
+  Ae.forEach(a=>{if(a.companyId!=null&&a.companyId!=='')freq[a.companyId]=(freq[a.companyId]||0)+1;});
+  const vals=Object.values(freq);
+  const items=[
+    {name:'1회 컨택',cnt:vals.filter(v=>v===1).length},
+    {name:'2회 컨택',cnt:vals.filter(v=>v===2).length},
+    {name:'3회 이상',cnt:vals.filter(v=>v>=3).length},
+  ];
+  const tot=vals.length||1;
+  const max=Math.max(...items.map(i=>i.cnt),1);
+  set('ctypeList',items.map(it=>`
+    <div class="ctrow">
+      <span class="ctname">${it.name}</span>
+      <div class="ctbar-bg"><div class="ctbar-f" style="width:${it.cnt/max*100}%;"></div></div>
+      <span class="ctval">${fmtN(it.cnt)}</span>
+      <span class="ctpct">${(it.cnt/tot*100).toFixed(0)}%</span>
+    </div>`).join(''));
+}
+
+function rWonKPI(W,A,Ae,mon,wd,mgr){
+  const tot=W.length;
+  const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const curYM=curYMof(mon);
+  const exec=execSum(mgr,mon);
+  const nxExec=execSum(mgr,nextM(curYM));
+  set('wonTrendSub','월별 건수 · 금액');
+  set('wonKPI',`
+    <div class="mkpi"><div class="mkpi-lbl">수주 건수</div><div class="mkpi-val">${tot}건</div><div class="mkpi-sub">거래완료 기준</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">수주 금액</div><div class="mkpi-val" style="font-size:18px;">${fmt(wAmt)}</div><div class="mkpi-sub">건당 ${tot?fmt(wAmt/tot):'—'}</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">집행 매출</div><div class="mkpi-val p" style="font-size:18px;">${fmt(exec)}</div><div class="mkpi-sub">수주의 ${wAmt?(exec/wAmt*100).toFixed(0):0}%</div></div>
+    <div class="mkpi"><div class="mkpi-lbl">다음달 집행예정</div><div class="mkpi-val" style="font-size:18px;">${fmt(nxExec)}</div><div class="mkpi-sub">${nextM(curYM).replace('-','년 ')}월</div></div>
+  `);
+}
+
+function rWonChart(mgr,mon){
+  const mos=MONTHS,lbs=mos.map(ym=>`${+ym.split('-')[1]}월`);
+  const flt=w=>mgr==='all'||w.manager===mgr;
+  const cD=mos.map(ym=>rawW.filter(w=>flt(w)&&w.wonYM===ym).length);
+  const aD=mos.map(ym=>Math.round(rawW.filter(w=>flt(w)&&w.wonYM===ym).reduce((s,w)=>s+(Number(w.amount)||0),0)/10000));
+  const{grid,text,bar,line}=gc();
+  CHART_LABELS['wonC']={mode:'top',fmt:(v,di)=>di===0?v.toLocaleString():String(v)};
+  if(charts.won)charts.won.destroy();
+  charts.won=new Chart(document.getElementById('wonC'),{
+    type:'bar',
+    data:{labels:lbs,datasets:[
+      {label:'금액(만원)',data:aD,type:'line',borderColor:line,pointBackgroundColor:line,tension:.3,yAxisID:'y1',pointRadius:5,fill:false,borderWidth:2,order:1},
+      {label:'건수',data:cD,backgroundColor:bar,borderRadius:4,yAxisID:'y',order:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
+      plugins:{legend:{labels:{color:text,font:{size:11},boxWidth:10,padding:14}}},
+      scales:{x:{grid:{color:grid},ticks:{color:text,font:{size:11}}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true,position:'left'},
+              y1:{grid:{display:false},ticks:{color:text,font:{size:11}},beginAtZero:true,position:'right'}}}
+  });
+}
+
+function rWonCells(W,mon){
+  const tot=W.length;
+  const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const nW=W.filter(w=>w.isNewRevenue);
+  const rW=W.filter(w=>!w.isNewRevenue);
+  const nAmt=nW.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const rAmt=rW.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  set('wonCells',`
+    <div class="wcrow"><span class="wcname">총 수주</span><div><div class="wcval">${tot}건</div><div class="wcsub">${fmt(wAmt)}</div></div></div>
+    <div class="wcrow"><span class="wcname">신규 수주</span><div><div class="wcval">${nW.length}건 <span style="font-size:12px;color:var(--t3);">${tot?(nW.length/tot*100).toFixed(0):0}%</span></div><div class="wcsub">${fmt(nAmt)}</div></div></div>
+    <div class="wcrow"><span class="wcname">재구매 수주</span><div><div class="wcval">${rW.length}건 <span style="font-size:12px;color:var(--t3);">${tot?(rW.length/tot*100).toFixed(0):0}%</span></div><div class="wcsub">${fmt(rAmt)}</div></div></div>
+    <div class="wcrow" style="border-bottom:none;"><span class="wcname">신규 vs 재구매 매출</span><div><div class="wcval" style="font-size:13px;">${fmt(nAmt)} <span style="color:var(--t3);font-weight:400;">:</span> ${fmt(rAmt)}</div><div class="wcsub">${wAmt?(nAmt/wAmt*100).toFixed(0):0}% vs ${wAmt?(rAmt/wAmt*100).toFixed(0):0}%</div></div></div>
+  `);
+}
+
+function rDonut(cid,lid,W,f,lbls,cols){
+  const cnts=lbls.map(l=>W.filter(w=>w[f]===l).length);
+  const tot=cnts.reduce((s,c)=>s+c,0);
+  if(charts[cid])charts[cid].destroy();
+  charts[cid]=new Chart(document.getElementById(cid),{
+    type:'doughnut',
+    data:{labels:lbls,datasets:[{data:cnts,backgroundColor:cols,borderWidth:0,hoverOffset:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}건 (${tot?((ctx.parsed/tot)*100).toFixed(0):0}%)`}}}}
+  });
+  set(lid,lbls.map((l,i)=>`
+    <div class="dleg">
+      <div class="ddot" style="background:${cols[i]};"></div>
+      <span class="dname">${l}</span>
+      <span class="dval">${cnts[i]}건</span><span class="dpct">${tot?((cnts[i]/tot)*100).toFixed(0):0}%</span>
+    </div>`).join(''));
+}
+
+function rConv(W,A,Ae){
+  const nW=W.filter(w=>w.isNewRevenue).length;
+  const rW=W.filter(w=>!w.isNewRevenue).length;
+  const recW=W.filter(w=>w.category==='채용').length;
+  const eduW=W.filter(w=>w.category==='교육').length;
+  const nA=Ae.filter(a=>a.ct==='신규').length;
+  const rA=Ae.filter(a=>a.ct==='재구매').length;
+  const recA=Ae.filter(a=>a.cat==='채용').length;
+  const eduA=Ae.filter(a=>a.cat==='교육').length;
+  const items=[
+    {lbl:'전체',r:rate(W.length,A.length),det:`${W.length}건 / ${A.length}건`},
+    {lbl:'신규',r:rate(nW,nA),det:`${nW}건 / ${nA}건`},
+    {lbl:'재구매',r:rate(rW,rA),det:`${rW}건 / ${rA}건`},
+    {lbl:'채용',r:rate(recW,recA),det:`${recW}건 / ${recA}건`},
+    {lbl:'교육',r:rate(eduW,eduA),det:`${eduW}건 / ${eduA}건`},
+  ];
+  set('convG',items.map(it=>`
+    <div class="conv-item">
+      <div class="conv-lbl">${it.lbl}</div>
+      <div class="conv-cnt">${it.det.split(' / ')[0]}</div>
+      <div class="conv-rate">${it.r} · ${it.det}</div>
+    </div>`).join(''));
+}
+
+function rUnit(W){
+  const tot=W.length,nW=W.filter(w=>w.isNewRevenue),rW=W.filter(w=>!w.isNewRevenue);
+  const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const nAmt=nW.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  const rAmt=rW.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  set('unitRow',`
+    <div class="unit-item"><div class="unit-lbl">전체 평균 객단가</div><div class="unit-val">${tot?fmt(wAmt/tot):'—'}</div></div>
+    <div class="unit-item"><div class="unit-lbl">신규 객단가</div><div class="unit-val">${nW.length?fmt(nAmt/nW.length):'—'}</div></div>
+    <div class="unit-item"><div class="unit-lbl">재구매 객단가</div><div class="unit-val">${rW.length?fmt(rAmt/rW.length):'—'}</div></div>
+  `);
+}
+
+function rFc(L){
+  const q=L.filter(l=>['견적발송','제안발송'].includes(l.activityStatus));
+  const e=L.filter(l=>l.activityStatus==='구매예정');
+  const qA=Math.round(q.length*0.6*AVG_PRICE);
+  const eA=Math.round(e.length*0.9*AVG_PRICE);
+  set('fcList',`
+    <div class="fc-row">
+      <div><div class="fc-stage">견적발송</div><div class="fc-sub">전환율 60% 적용</div></div>
+      <div class="fc-right"><div class="fc-cnt">${fmtN(q.length)}건</div><div class="fc-amt">${fmt(qA)}</div></div>
+    </div>
+    <div class="fc-row">
+      <div><div class="fc-stage">구매예정</div><div class="fc-sub">전환율 90% 적용</div></div>
+      <div class="fc-right"><div class="fc-cnt">${fmtN(e.length)}건</div><div class="fc-amt">${fmt(eA)}</div></div>
+    </div>`);
+  document.getElementById('fcTot').style.display='flex';
+  set('fcV',fmt(qA+eA));
+}
+
+function rTable(W,mon){
+  const sorted=[...W].sort((a,b)=>(b.wonDate||'').localeCompare(a.wonDate||''));
+  thisW=sorted.slice(0,30);
+  otherW=sorted.slice(30);
+  set('tblSub',`수주일 최신순 · ${thisW.length}건 표시 / 전체 ${W.length}건`);
+  drawTable();
+}
+
+function mkRow(w){
+  const camId = w.campaignId||w.campaign_id||'—';
+  const camUrl = camId!=='—'
+    ? `<a href="https://introvel2.anchoreer.com/sales_admin/ad_campaigns/${camId}/edit" target="_blank" style="color:var(--p);text-decoration:none;">${camId}</a>`
+    : '—';
+  return`<tr>
+    <td>${w.companyName||'—'}</td>
+    <td style="color:var(--t2);">${w.manager||'—'}</td>
+    <td><span class="badge b-p">${w.productType||'—'}</span></td>
+    <td style="font-size:11px;color:var(--t2);">${camUrl}</td>
+    <td><span class="badge b-g">${w.category||'—'}</span></td>
+    <td style="color:var(--t3);">${(w.wonDate||'').substring(0,10)}</td>
+    <td style="text-align:right;font-weight:600;">${fmt(Number(w.amount)||0)}</td>
+    <td><span class="badge ${w.isNewRevenue?'b-p':'b-g'}">${w.isNewRevenue?'신규':'재구매'}</span></td>
+  </tr>`;
+}
+
+function drawTable(){
+  const tb=document.getElementById('tbody'),fb=document.getElementById('foldBtn');
+  if(!thisW.length&&!otherW.length){
+    tb.innerHTML='<tr><td colspan="8"><div class="empty">수주 데이터 없음</div></td></tr>';
+    fb.style.display='none';return;
+  }
+  tb.innerHTML=thisW.map(mkRow).join('');
+  if(!folded)tb.innerHTML+=otherW.map(mkRow).join('');
+  if(otherW.length){fb.style.display='flex';fb.textContent=folded?`▼ 나머지 ${otherW.length}건 펼치기`:'▲ 접기';}
+  else fb.style.display='none';
+}
+function fold(){folded=!folded;drawTable();}
+function set(id,v){const el=document.getElementById(id);if(el)el.innerHTML=v;}
+
+// ── 목표치 관련 ──
+let goalData = {contRec:0, contEdu:0, wonRec:0, wonEdu:0};
+let curContAct=0, curContRec=0, curContEdu=0;
+let curWonAmt=0, curWonRec=0, curWonEdu=0;
+
+function loadGoal(){
+  try{
+    const saved = localStorage.getItem('jasoseol_goal');
+    if(saved) goalData = {...goalData, ...JSON.parse(saved)};
+  }catch(e){}
+  if(goalData.contRec){ const el=document.getElementById('goalContRecInp'); if(el) el.value=goalData.contRec; }
+  if(goalData.contEdu){ const el=document.getElementById('goalContEduInp'); if(el) el.value=goalData.contEdu; }
+  if(goalData.wonRec) { const el=document.getElementById('goalWonRecInp');  if(el) el.value=goalData.wonRec; }
+  if(goalData.wonEdu) { const el=document.getElementById('goalWonEduInp');  if(el) el.value=goalData.wonEdu; }
+  updateGoal('cont'); updateGoal('won');
+}
+
+function updateGoal(type){
+  if(type==='cont'){
+    const gRec = Number(document.getElementById('goalContRecInp')?.value)||0;
+    const gEdu = Number(document.getElementById('goalContEduInp')?.value)||0;
+    const gTot = gRec + gEdu;
+    // 현재 컨택 건수 (채용/교육 분리)
+    const curRec = curContRec; const curEdu = curContEdu; const curTot = curContAct;
+    const pRec = gRec>0?Math.min(curRec/gRec*100,100).toFixed(1):0;
+    const pEdu = gEdu>0?Math.min(curEdu/gEdu*100,100).toFixed(1):0;
+    const pTot = gTot>0?Math.min(curTot/gTot*100,100).toFixed(1):0;
+    set('goalContRecCur',`${fmtN(curRec)} / ${fmtN(gRec)}건`);
+    set('goalContRecPct',pRec+'%');
+    const br=document.getElementById('goalContRecBar');if(br)br.style.width=pRec+'%';
+    set('goalContEduCur',`${fmtN(curEdu)} / ${fmtN(gEdu)}건`);
+    set('goalContEduPct',pEdu+'%');
+    const be=document.getElementById('goalContEduBar');if(be)be.style.width=pEdu+'%';
+    set('goalContTotCur',`${fmtN(curTot)} / ${fmtN(gTot)}건`);
+    set('goalContTotPct',pTot+'%');
+    const bt=document.getElementById('goalContTotBar');if(bt)bt.style.width=pTot+'%';
+  } else {
+    const gRec = Number(document.getElementById('goalWonRecInp')?.value)||0;
+    const gEdu = Number(document.getElementById('goalWonEduInp')?.value)||0;
+    const gTot = gRec + gEdu;
+    const curRec = Math.round(curWonRec/10000);
+    const curEdu = Math.round(curWonEdu/10000);
+    const curTot = Math.round(curWonAmt/10000);
+    const pRec = gRec>0?Math.min(curRec/gRec*100,100).toFixed(1):0;
+    const pEdu = gEdu>0?Math.min(curEdu/gEdu*100,100).toFixed(1):0;
+    const pTot = gTot>0?Math.min(curTot/gTot*100,100).toFixed(1):0;
+    set('goalWonRecCur',`${fmtN(curRec)} / ${fmtN(gRec)}만원`);
+    set('goalWonRecPct',pRec+'%');
+    const br=document.getElementById('goalWonRecBar');if(br)br.style.width=pRec+'%';
+    set('goalWonEduCur',`${fmtN(curEdu)} / ${fmtN(gEdu)}만원`);
+    set('goalWonEduPct',pEdu+'%');
+    const be=document.getElementById('goalWonEduBar');if(be)be.style.width=pEdu+'%';
+    set('goalWonTotCur',`${fmtN(curTot)} / ${fmtN(gTot)}만원`);
+    set('goalWonTotPct',pTot+'%');
+    const bt=document.getElementById('goalWonTotBar');if(bt)bt.style.width=pTot+'%';
+  }
+}
+
+function saveGoal(type){
+  if(type==='cont'){
+    goalData.contRec = Number(document.getElementById('goalContRecInp')?.value)||0;
+    goalData.contEdu = Number(document.getElementById('goalContEduInp')?.value)||0;
+  } else {
+    goalData.wonRec = Number(document.getElementById('goalWonRecInp')?.value)||0;
+    goalData.wonEdu = Number(document.getElementById('goalWonEduInp')?.value)||0;
+  }
+  try{ localStorage.setItem('jasoseol_goal', JSON.stringify(goalData)); }catch(e){}
+  const btn = event.target;
+  btn.textContent = '저장됨 ✓';
+  setTimeout(()=>{ btn.textContent = '저장'; }, 1500);
+}
+
+// ══════════ 영업자 비교 ══════════
+// 값 라벨 플러그인 — 캔버스 id별 스펙(CHART_LABELS)에 따라 막대/포인트 위에 수치를 직접 그린다.
+// 스펙을 chart.options 안이 아니라 별도 맵에 두는 이유: Chart.js가 options 안의 함수를
+// scriptable option으로 오인해 자동 호출하기 때문.
+const CHART_LABELS={};
+// 배경색 밝기에 따라 가독성 좋은 글자색 반환
+function textOn(hex){
+  if(typeof hex!=='string'||hex[0]!=='#')return '#FFFFFF';
+  const c=hex.slice(1);const r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  return (0.299*r+0.587*g+0.114*b)>150?'#1C1917':'#FFFFFF';
+}
+const valueLabelPlugin={
+  id:'valueLabels',
+  afterDatasetsDraw(chart){
+    const spec=CHART_LABELS[chart.canvas.id];
+    if(!spec)return;
+    const ctx=chart.ctx, tcol=gc().text;
+    ctx.save();ctx.textAlign='center';
+
+    if(spec.mode==='top'){
+      chart.data.datasets.forEach((ds,di)=>{
+        const meta=chart.getDatasetMeta(di);if(meta.hidden)return;
+        meta.data.forEach((el,i)=>{
+          const v=ds.data[i];if(v==null)return;
+          const t=spec.fmt?spec.fmt(v,di,i):String(v);
+          if(t){ctx.font='700 10px Arial';ctx.fillStyle=spec.color?spec.color(di):tcol;ctx.fillText(t,el.x,el.y-5);}
+        });
+      });
+      if(spec.groupTop){
+        const n=chart.data.labels.length;
+        for(let i=0;i<n;i++){
+          let minY=Infinity,xs=[];
+          chart.data.datasets.forEach((ds,di)=>{const el=chart.getDatasetMeta(di).data[i];if(!el)return;minY=Math.min(minY,el.y);xs.push(el.x);});
+          if(!xs.length)continue;
+          const t=spec.groupTop(i);if(!t)continue;
+          ctx.font='700 10px Arial';ctx.fillStyle='#D97757';
+          ctx.fillText(t,xs.reduce((a,b)=>a+b,0)/xs.length,minY-19);
+        }
+      }
+    }
+
+    if(spec.mode==='stack'){
+      // 각 세그먼트 중앙에 값 (세그먼트 밝기에 따라 글자색 자동)
+      chart.data.datasets.forEach((ds,di)=>{
+        const meta=chart.getDatasetMeta(di);
+        const tc=textOn(ds.backgroundColor);
+        meta.data.forEach((el,i)=>{
+          const v=ds.data[i];if(!v)return;
+          const p=el.getProps(['y','base','x'],true);
+          if(Math.abs(p.base-p.y)<13)return;
+          ctx.font='700 10px Arial';ctx.fillStyle=tc;
+          ctx.fillText(spec.segFmt?spec.segFmt(v,di):String(v),p.x,(p.y+p.base)/2+3);
+        });
+      });
+      // 스택 상단에 요약 라인 (배열: 위→아래)
+      const lastMeta=chart.getDatasetMeta(chart.data.datasets.length-1);
+      lastMeta.data.forEach((el,i)=>{
+        const lines=spec.top?spec.top(i):null;if(!lines||!lines.length)return;
+        const topY=el.getProps(['y'],true).y;
+        lines.forEach((ln,li)=>{
+          const obj=(typeof ln==='object');
+          ctx.font='700 10px Arial';ctx.fillStyle=(obj&&ln.hl)?'#D97757':tcol;
+          ctx.fillText(obj?ln.t:ln, el.x, topY-6-(lines.length-1-li)*12);
+        });
+      });
+    }
+    ctx.restore();
+  }
+};
+if(window.Chart)Chart.register(valueLabelPlugin);
+
+const CMP_ORDER_KEY='wonAmt'; // 모든 차트 공통 정렬 기준(수주금액 내림차순) → 아래로 스캔하며 같은 영업자 추적
+
+function computeManagerStats(){
+  const mon=document.getElementById('monSel').value;
+  const wd=getWorkDays(mon);
+  const fw=w=>mon==='all'||w.wonYM===mon;
+  const fa=a=>mon==='all'||a.actYM===mon;
+  const cmap={};rawL.forEach(l=>{if(l.companyId)cmap[l.companyId]={ct:l.contractType,cat:l.category};});
+  const set=new Set();
+  rawL.forEach(l=>l.manager&&set.add(l.manager));
+  rawW.forEach(w=>w.manager&&set.add(w.manager));
+  rawA.forEach(a=>a.manager&&set.add(a.manager));
+  const arr=[...set].map(m=>{
+    const L=rawL.filter(l=>l.manager===m);
+    const W=rawW.filter(w=>w.manager===m&&fw(w));
+    const A=rawA.filter(a=>a.manager===m&&fa(a));
+    const Ae=A.map(a=>({...a,...(cmap[a.companyId]||{ct:''})}));
+    const wonAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
+    const wonNewAmt=W.filter(w=>w.isNewRevenue).reduce((s,w)=>s+(Number(w.amount)||0),0);
+    const uniqCompanies=new Set(A.map(a=>a.companyId).filter(Boolean)).size;
+    return {manager:m,
+      leadNew:L.filter(l=>l.contractType==='신규').length,
+      leadRe:L.filter(l=>l.contractType==='재구매').length,
+      leads:L.length,
+      contacts:A.length,contactsUniq:uniqCompanies,dailyAvg:A.length/wd,
+      contNew:Ae.filter(a=>a.ct==='신규').length,
+      contRe:Ae.filter(a=>a.ct==='재구매').length,
+      wonCnt:W.length,wonAmt,exec:execSum(m,mon),
+      wonNewAmt,wonReAmt:wonAmt-wonNewAmt,
+      avgPrice:W.length?wonAmt/W.length:0};
+  });
+  arr.sort((a,b)=>b[CMP_ORDER_KEY]-a[CMP_ORDER_KEY]);
+  return arr;
+}
+
+// 스택 막대 (신규/재구매/기타). o.padTop=상단 요약 라인 공간, o.footer=툴팁 하단
+function stackBar(id,labels,series,o){
+  o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
+  const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.color,borderRadius:4,stack:'s',maxBarThickness:56}));
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(cv,{
+    type:'bar',
+    data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      onClick:(e,el)=>{if(el.length)selectManager(labels[el[0].index]);},
+      layout:{padding:{top:o.padTop||10}},
+      plugins:{legend:{display:true,labels:{color:text,font:{size:11},boxWidth:10,padding:12}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y)}${o.unit||''}`,
+          footer:o.footer||(items=>`합계: ${fmtN(items.reduce((s,it)=>s+it.parsed.y,0))}${o.unit||''}`)}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{color:text,font:{size:11}}},
+              y:{stacked:true,grid:{color:grid},ticks:{color:text,font:{size:11}},beginAtZero:true}}}
+  });
+}
+
+// 그룹 막대 (여러 지표 나란히). 막대 위 값 라벨 + o.footer 툴팁. 막대 간격은 barPercentage로 좁힘
+function groupBar(id,labels,series,o){
+  o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
+  const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.color,borderRadius:4,
+    maxBarThickness:40,categoryPercentage:0.62,barPercentage:0.96}));
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(cv,{
+    type:'bar',
+    data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      onClick:(e,el)=>{if(el.length)selectManager(labels[el[0].index]);},
+      layout:{padding:{top:o.padTop||30}},
+      plugins:{legend:{display:!o.noLegend,labels:{color:text,font:{size:11},boxWidth:10,padding:12}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${o.tfmt?o.tfmt(ctx.parsed.y):ctx.parsed.y}`,footer:o.footer}}},
+      scales:{x:{grid:{display:false},ticks:{color:text,font:{size:11}}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:11},callback:v=>o.money?v.toLocaleString():v},beginAtZero:true,grace:'16%'}}}
+  });
+}
+
+// 수주율(전환율) = 수주건수 ÷ 컨택건수
+function convRate(s){return s.contacts?(s.wonCnt/s.contacts*100).toFixed(1):'0.0';}
+
+// 각 섹션 하단의 영업자별 비교 차트 (담당자 필터 무관, 기간 필터만 반영)
+function renderCompare(){
+  if(!window.Chart)return;
+  const stats=computeManagerStats();
+  if(!stats.length)return;
+  const labels=stats.map(s=>s.manager);
+  const wd=getWorkDays(document.getElementById('monSel').value);
+
+  // 리드 현황 · 영업자별 보유 리드 (신규/재구매 스택) — 세그먼트 값 + 총합
+  CHART_LABELS['cmpLeadC']={mode:'stack',segFmt:v=>fmtN(v),top:i=>[`총 ${fmtN(stats[i].leads)}`]};
+  stackBar('cmpLeadC',labels,[
+    {label:'신규',data:stats.map(s=>s.leadNew),color:'#D97757'},
+    {label:'재구매',data:stats.map(s=>s.leadRe),color:'#78716C'},
+  ],{unit:'개',padTop:22});
+
+  // 컨택 현황 · 영업자별 총 컨택 vs 유니크 기업 (그룹) — 막대 값 + 기업당 반복 상단
+  CHART_LABELS['cmpContC']={mode:'top',fmt:v=>fmtN(v),
+    groupTop:i=>{const s=stats[i];return s.contactsUniq?`${(s.contacts/s.contactsUniq).toFixed(1)}회/사`:'';}};
+  groupBar('cmpContC',labels,[
+    {label:'총 컨택',data:stats.map(s=>s.contacts),color:'#D97757'},
+    {label:'유니크 기업',data:stats.map(s=>s.contactsUniq),color:'#C4A08A'},
+  ],{tfmt:v=>fmtN(v)+'건',padTop:28,
+     footer:items=>{const s=stats[items[0].dataIndex];return `총 ${fmtN(s.contacts)}건 · 유니크 ${fmtN(s.contactsUniq)}개 · 일평균 ${(s.contacts/wd).toFixed(1)}건`;}});
+
+  // 수주 현황 · 영업자별 수주금액/집행매출 (그룹) — 막대 값 + 건수 툴팁 + 수주율 상단
+  CHART_LABELS['cmpWonC']={mode:'top',fmt:v=>v.toLocaleString(),groupTop:i=>`전환 ${convRate(stats[i])}%`};
+  groupBar('cmpWonC',labels,[
+    {label:'수주금액',data:stats.map(s=>Math.round(s.wonAmt/10000)),color:'#D97757'},
+    {label:'집행매출',data:stats.map(s=>Math.round(s.exec/10000)),color:'#C4A08A'},
+  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:34,
+     footer:items=>`수주 건수: ${stats[items[0].dataIndex].wonCnt}건`});
+
+  // 수주 현황 · 영업자별 신규/재구매 매출 (그룹) — 막대 값 + 신규 비중 툴팁
+  CHART_LABELS['cmpWonNRC']={mode:'top',fmt:v=>v.toLocaleString()};
+  groupBar('cmpWonNRC',labels,[
+    {label:'신규 매출',data:stats.map(s=>Math.round(s.wonNewAmt/10000)),color:'#D97757'},
+    {label:'재구매 매출',data:stats.map(s=>Math.round(s.wonReAmt/10000)),color:'#C4A08A'},
+  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:22,
+     footer:items=>{const s=stats[items[0].dataIndex];return `총 ${fmtN(Math.round(s.wonAmt/10000))}만원 · 신규 ${s.wonAmt?(s.wonNewAmt/s.wonAmt*100).toFixed(0):0}%`;}});
+
+  // 수주 현황 · 영업자별 평균 객단가 (단일 막대)
+  CHART_LABELS['cmpUnitC']={mode:'top',fmt:v=>v.toLocaleString()};
+  groupBar('cmpUnitC',labels,[
+    {label:'평균 객단가',data:stats.map(s=>Math.round(s.avgPrice/10000)),color:'#D97757'},
+  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:22,noLegend:true,
+     footer:items=>`수주 ${stats[items[0].dataIndex].wonCnt}건`});
+}
+
+function selectManager(m){
+  const sel=document.getElementById('mgrSel');
+  if([...sel.options].some(o=>o.value===m))sel.value=m;
+  go();
+}
+
+load();
+</script>
+</body>
+</html>
