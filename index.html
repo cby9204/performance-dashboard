@@ -383,29 +383,42 @@ tr:hover td{background:var(--sf1);}
         <div class="sec-line"></div>
       </div>
 
-      <!-- 컨택 KPI -->
       <div class="mkpi-row" id="contKPI">
         <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
       </div>
 
-      <!-- 컨택 추이 (대형) — 당월 vs 전월, 담당자 필터로 한 명씩 -->
+      <!-- 컨택 추이 (대형) — 당월 vs 전월 -->
       <div class="card">
         <div class="ch"><span class="ct">컨택 추이 — 당월 vs 전월</span><span class="cs" id="mgrTrendSub">담당자 필터로 한 명씩 · 오늘 시점 갭 표기</span></div>
         <div class="cb"><div class="chart-wrap h360"><canvas id="mgrTrendC"></canvas></div></div>
       </div>
 
+      <!-- 컨택 진척 (전월 대비) -->
+      <div class="card">
+        <div class="ch"><span class="ct">컨택 진척 — 전월 대비</span><span class="cs" id="paceCtx"></span></div>
+        <div class="cb">
+          <div class="pace-row" id="contactPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">컨택 주차별</span><span class="cs">월요일 시작 주 · 단위 건</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="contactWeekC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">2026 월별 영업일</span><span class="cs">진척 계산 기준 · 월~금 − 공휴일 · 주황 = 당월</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="bizCalC"></canvas></div></div>
+        </div>
+      </div>
+
       <div class="g21">
         <div class="card">
           <div class="ch"><span class="ct">활동 추이</span><span class="cs" id="actSub"></span></div>
-          <div class="cb">
-            <div class="chart-wrap h200"><canvas id="actC"></canvas></div>
-          </div>
+          <div class="cb"><div class="chart-wrap h200"><canvas id="actC"></canvas></div></div>
         </div>
         <div class="card">
           <div class="ch"><span class="ct">컨택 반복 분포</span><span class="cs">기업별 컨택 횟수 (유니크 기업 기준)</span></div>
-          <div class="cb">
-            <div class="ctype-list" id="ctypeList"><div class="ld"><div class="spin"></div></div></div>
-          </div>
+          <div class="cb"><div class="ctype-list" id="ctypeList"><div class="ld"><div class="spin"></div></div></div></div>
         </div>
       </div>
 
@@ -413,50 +426,93 @@ tr:hover td{background:var(--sf1);}
         <div class="ch"><span class="ct">영업자별 컨택 (중복포함) — 전월 vs 당월</span><span class="cs">전체 컨택 건수 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContC"></canvas></div></div>
       </div>
-
       <div class="card">
         <div class="ch"><span class="ct">영업자별 컨택 (유니크 기업) — 전월 vs 당월</span><span class="cs">기업 단위 중복 제거 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContUniqC"></canvas></div></div>
       </div>
-
     </div>
 
-    <!-- ══ STEP 3: 수주 현황 ══ -->
+    <!-- ══ STEP 3: 매출 현황 (수주 + 집행) ══ -->
     <div class="sec">
       <div class="sec-hdr">
         <span class="sec-step">STEP 3</span>
-        <span class="sec-title">수주 현황</span>
+        <span class="sec-title">매출 현황 — 수주 · 집행</span>
         <div class="sec-line"></div>
       </div>
 
-      <!-- 수주 KPI -->
       <div class="mkpi-row" id="wonKPI">
         <div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div>
       </div>
 
-      <!-- 수주 추이 + 신규/재구매 상세 -->
+      <!-- 수주 추이 + 상세 -->
       <div class="g21">
         <div class="card">
           <div class="ch"><span class="ct">수주 추이</span><span class="cs" id="wonTrendSub"></span></div>
-          <div class="cb">
-            <div class="chart-wrap h200"><canvas id="wonC"></canvas></div>
-          </div>
+          <div class="cb"><div class="chart-wrap h200"><canvas id="wonC"></canvas></div></div>
         </div>
         <div class="card">
           <div class="ch"><span class="ct">수주 상세</span></div>
-          <div class="cb">
-            <div class="won-cells" id="wonCells"><div class="ld"><div class="spin"></div></div></div>
-          </div>
+          <div class="cb"><div class="won-cells" id="wonCells"><div class="ld"><div class="spin"></div></div></div></div>
         </div>
       </div>
 
-      <!-- 집행 매출 추이 (인식기준) -->
+      <!-- 수주 진척 (전월 대비) -->
+      <div class="card">
+        <div class="ch"><span class="ct">수주 진척 — 전월 대비</span><span class="cs">같은 영업일차까지 누적 비교</span></div>
+        <div class="cb">
+          <div class="pace-row" id="wonPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">수주금액 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="wonDailyC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">수주금액 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="wonWeekC"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- 집행 매출 추이 -->
       <div class="card">
         <div class="ch"><span class="ct">집행 매출 추이</span><span class="cs" id="execTrendSub">월별 인식매출 · 단위 만원</span></div>
         <div class="cb"><div class="chart-wrap h200"><canvas id="execC"></canvas></div></div>
       </div>
 
-      <!-- 도넛 3개 -->
+      <!-- 집행 진척 (전월 대비) -->
+      <div class="card">
+        <div class="ch"><span class="ct">집행 진척 — 전월 대비</span><span class="cs">인식기준 · 같은 영업일차까지 누적 비교</span></div>
+        <div class="cb">
+          <div class="pace-row" id="execPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">집행매출 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="execDailyC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">집행매출 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="execWeekC"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- 영업자별 비교 -->
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 수주금액 — 전월 vs 당월</span><span class="cs">단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonC"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 집행금액 — 전월 vs 당월</span><span class="cs">인식기준 집행매출 · 단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpExecC"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 수주건수 — 전월 vs 당월</span><span class="cs">상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
+      </div>
+
+      <!-- 비중 도넛 -->
       <div class="g3">
         <div class="card">
           <div class="ch"><span class="ct">신규 · 재구매 매출</span><span class="cs">수주 금액 기준</span></div>
@@ -475,12 +531,17 @@ tr:hover td{background:var(--sf1);}
       <!-- 전환율 -->
       <div class="card">
         <div class="ch"><span class="ct">컨택 → 수주 전환율</span><span class="cs">컨택 건수 대비 수주 건수</span></div>
-        <div class="cb">
-          <div class="conv-g" id="convG"><div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div></div>
-        </div>
+        <div class="cb"><div class="conv-g" id="convG"><div class="ld" style="grid-column:1/-1;height:60px;"><div class="spin"></div></div></div></div>
       </div>
+    </div>
 
-      <!-- 파이프라인 포캐스팅 -->
+    <!-- ══ STEP 4: 포캐스팅 ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">STEP 4</span>
+        <span class="sec-title">파이프라인 포캐스팅</span>
+        <div class="sec-line"></div>
+      </div>
       <div class="card">
         <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90% · 6월 이후 전환 리드만</span></div>
         <div class="cb">
@@ -489,84 +550,6 @@ tr:hover td{background:var(--sf1);}
             <span class="fc-tlbl">합산 예상 매출</span>
             <span class="fc-tval" id="fcV">—</span>
           </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="ch"><span class="ct">영업자별 수주금액 — 전월 vs 당월</span><span class="cs">단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
-        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonC"></canvas></div></div>
-      </div>
-
-      <div class="card">
-        <div class="ch"><span class="ct">영업자별 집행금액 — 전월 vs 당월</span><span class="cs">인식기준 집행매출 · 단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
-        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpExecC"></canvas></div></div>
-      </div>
-
-      <div class="card">
-        <div class="ch"><span class="ct">영업자별 수주건수 — 전월 vs 당월</span><span class="cs">상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
-        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
-      </div>
-
-    </div>
-
-    <!-- ══ STEP 4: 진척 현황 (당월 vs 전월, 영업일 기준) ══ -->
-    <div class="sec">
-      <div class="sec-hdr">
-        <span class="sec-step">STEP 4</span>
-        <span class="sec-title">진척 현황 — 당월 vs 전월</span>
-        <div class="sec-line"></div>
-      </div>
-
-      <div class="card">
-        <div class="ch"><span class="ct">2026 월별 영업일</span><span class="cs">월~금 − 공휴일 · 주황 = 당월</span></div>
-        <div class="cb"><div class="chart-wrap h180"><canvas id="bizCalC"></canvas></div></div>
-      </div>
-
-      <!-- 컨택 진척 (일자별 누적은 STEP2 대형 차트로, 여기선 요약+주차별) -->
-      <div class="card">
-        <div class="ch"><span class="ct">컨택 진척</span><span class="cs">전월 동일 영업일차와 비교 · 일자별 추이는 컨택 현황(STEP2) 참고</span></div>
-        <div class="cb">
-          <div class="pace-row" id="contactPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><span class="ct">컨택 주차별</span><span class="cs">월요일 시작 주 · 단위 건</span></div>
-        <div class="cb"><div class="chart-wrap h260"><canvas id="contactWeekC"></canvas></div></div>
-      </div>
-
-      <!-- 수주 진척 -->
-      <div class="card">
-        <div class="ch"><span class="ct">수주 진척</span><span class="cs" id="paceCtx"></span></div>
-        <div class="cb">
-          <div class="pace-row" id="wonPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
-        </div>
-      </div>
-      <div class="g2">
-        <div class="card">
-          <div class="ch"><span class="ct">수주금액 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="wonDailyC"></canvas></div></div>
-        </div>
-        <div class="card">
-          <div class="ch"><span class="ct">수주금액 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="wonWeekC"></canvas></div></div>
-        </div>
-      </div>
-
-      <!-- 집행 진척 -->
-      <div class="card">
-        <div class="ch"><span class="ct">집행 진척</span><span class="cs">인식기준 집행매출 · 전월 동일 영업일차와 비교</span></div>
-        <div class="cb">
-          <div class="pace-row" id="execPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
-        </div>
-      </div>
-      <div class="g2">
-        <div class="card">
-          <div class="ch"><span class="ct">집행매출 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="execDailyC"></canvas></div></div>
-        </div>
-        <div class="card">
-          <div class="ch"><span class="ct">집행매출 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
-          <div class="cb"><div class="chart-wrap h260"><canvas id="execWeekC"></canvas></div></div>
         </div>
       </div>
     </div>
