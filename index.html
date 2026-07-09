@@ -298,11 +298,7 @@ tr:hover td{background:var(--sf1);}
     <span class="ts">담당자</span>
     <select id="mgrSel" onchange="go()"><option value="all">전체</option></select>
     <span class="ts">기간</span>
-    <select id="monSel" onchange="go()">
-      <option value="2026-05">2026년 5월</option>
-      <option value="2026-06" selected>2026년 6월</option>
-      <option value="all">전체 (5월~)</option>
-    </select>
+    <select id="monSel" onchange="go()"></select>
     <button class="rbtn" id="rfBtn" onclick="load()">↻ 새로고침</button>
     <button class="thbtn" id="thBtn" onclick="toggleTheme()">☀️</button>
     <span class="ts" id="lastUp"></span>
@@ -548,8 +544,10 @@ function buildMonths(){
   sel.innerHTML='';
   MONTHS.forEach(ym=>{const[y,m]=ym.split('-');const o=document.createElement('option');o.value=ym;o.textContent=`${y}년 ${+m}월`;sel.appendChild(o);});
   const ao=document.createElement('option');ao.value='all';ao.textContent='전체';sel.appendChild(ao);
-  const defM=[...new Set(rawW.map(w=>w.wonYM).filter(Boolean))].sort().pop()||MONTHS[MONTHS.length-1]||'all';
-  if([...sel.options].some(o=>o.value===cur))sel.value=cur; else sel.value=defM;
+  const now=new Date(),thisYM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const latestWon=[...new Set(rawW.map(w=>w.wonYM).filter(Boolean))].sort().pop();
+  const defM=MONTHS.includes(thisYM)?thisYM:(latestWon||MONTHS[MONTHS.length-1]||'all');
+  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur; else sel.value=defM;
 }
 
 function sample(){
