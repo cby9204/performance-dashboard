@@ -128,11 +128,22 @@ select{height:32px;font-size:12px;padding:0 10px;border:0.5px solid var(--bd);bo
 /* ── 차트 ── */
 .chart-wrap{position:relative;}
 .chart-wrap.h160{height:160px;}
+.chart-wrap.h180{height:180px;}
 .chart-wrap.h200{height:200px;}
 .chart-wrap.h240{height:240px;}
+.chart-wrap.h260{height:260px;}
 .chart-wrap.h280{height:280px;}
 .chart-wrap.h300{height:300px;}
 .chart-wrap.h340{height:340px;}
+/* 진척 KPI 타일 */
+.pace-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pace-tile{background:var(--sf1);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;}
+.pace-lbl{font-size:11px;color:var(--t2);font-weight:600;margin-bottom:6px;}
+.pace-val{font-size:20px;font-weight:700;color:var(--t1);letter-spacing:-.02em;}
+.pace-val.muted{color:var(--t2);font-weight:600;}
+.pace-chg{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;}
+.pace-chg.up{color:#D97757;} .pace-chg.down{color:var(--t2);}
+.pace-sub{font-size:11px;color:var(--t3);margin-top:3px;}
 
 /* ── 수주 상세 셀 ── */
 .won-cells{display:flex;flex-direction:column;gap:0;}
@@ -477,6 +488,56 @@ tr:hover td{background:var(--sf1);}
 
     </div>
 
+    <!-- ══ STEP 4: 진척 현황 (당월 vs 전월, 영업일 기준) ══ -->
+    <div class="sec">
+      <div class="sec-hdr">
+        <span class="sec-step">STEP 4</span>
+        <span class="sec-title">진척 현황 — 당월 vs 전월</span>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">2026 월별 영업일</span><span class="cs">월~금 − 공휴일 · 주황 = 당월</span></div>
+        <div class="cb"><div class="chart-wrap h180"><canvas id="bizCalC"></canvas></div></div>
+      </div>
+
+      <!-- 수주 진척 -->
+      <div class="card">
+        <div class="ch"><span class="ct">수주 진척</span><span class="cs" id="paceCtx"></span></div>
+        <div class="cb">
+          <div class="pace-row" id="wonPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">수주금액 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="wonDailyC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">수주금액 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="wonWeekC"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- 집행 진척 -->
+      <div class="card">
+        <div class="ch"><span class="ct">집행 진척</span><span class="cs">인식기준 집행매출 · 전월 동일 영업일차와 비교</span></div>
+        <div class="cb">
+          <div class="pace-row" id="execPaceKPI"><div class="ld" style="grid-column:1/-1;height:56px;"><div class="spin"></div></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="ct">집행매출 일자별 누적</span><span class="cs">전월 vs 당월 · 당월은 오늘까지</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="execDailyC"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">집행매출 주차별</span><span class="cs">월요일 시작 주 · 단위 만원</span></div>
+          <div class="cb"><div class="chart-wrap h260"><canvas id="execWeekC"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ 수주 상세 테이블 ══ -->
     <div class="sec">
       <div class="sec-hdr">
@@ -507,7 +568,9 @@ tr:hover td{background:var(--sf1);}
 const GAS='https://script.google.com/macros/s/AKfycbypQoXlkv7F9753BvSZkYb715Tm6L6XZ_fv1L0pBb3_JpNvGjKYYjMceJA0ro4P_0n2ew/exec';
 let AVG_PRICE=4619685; // 로드 시 실데이터 평균 객단가로 갱신
 const MIN_YM='2026-06'; // 이 월부터만 노출(과거 데이터 제외)
-let rawL=[],rawW=[],rawA=[],rawExec=[],MONTHS=[],charts={},thisW=[],otherW=[],folded=true;
+let rawL=[],rawW=[],rawA=[],rawExec=[],rawExecD=[],MONTHS=[],charts={},thisW=[],otherW=[],folded=true;
+// 공휴일 — 서버('공휴일' 시트)에서 받아 채움. 아래는 서버 응답 없을 때의 기본값(fallback)
+let HOLIDAYS={'2026-01-01':1,'2026-02-17':1,'2026-02-18':1,'2026-02-19':1,'2026-03-01':1,'2026-05-05':1,'2026-06-06':1,'2026-08-15':1,'2026-09-21':1,'2026-09-22':1,'2026-09-23':1,'2026-10-03':1,'2026-10-09':1,'2026-12-25':1};
 
 const dark=()=>document.documentElement.classList.contains('dark');
 function toggleTheme(){
@@ -528,12 +591,16 @@ async function load(){
   btn.classList.add('loading');
   try{
     const j=await fetch(GAS).then(r=>r.json());
-    rawL=j.leads||[]; rawA=j.activities||[]; rawW=j.deals||[]; rawExec=j.execMonthly||[];
+    rawL=j.leads||[]; rawA=j.activities||[]; rawW=j.deals||[]; rawExec=j.execMonthly||[]; rawExecD=j.execDaily||[];
+    // 공휴일 시트에서 받은 목록으로 교체(있을 때만). 주말은 코드에서 자동 제외
+    if(Array.isArray(j.holidays)&&j.holidays.length){HOLIDAYS={};j.holidays.forEach(d=>{const s=String(d).slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(s))HOLIDAYS[s]=1;});}
     // 월 키 정규화: 시트 왕복 중 날짜로 변질된 경우 'YYYY-MM'만 추출 (없으면 날짜 필드에서 보정)
     const ym7=v=>{const m=String(v==null?'':v).match(/(\d{4})-(\d{2})/);return m?m[1]+'-'+m[2]:'';};
+    const ymd=v=>{const m=String(v==null?'':v).match(/(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:'';};
     rawA.forEach(a=>{a.actYM=ym7(a.actYM)||ym7(a.actDate);});
     rawW.forEach(w=>{w.wonYM=ym7(w.wonYM)||ym7(w.wonDate);});
     rawExec.forEach(e=>{e.ym=ym7(e.ym);});
+    rawExecD.forEach(e=>{e.date=ymd(e.date);});
     if(rawW.length) AVG_PRICE=rawW.reduce((s,w)=>s+(Number(w.amount)||0),0)/rawW.length||AVG_PRICE;
     document.getElementById('lastUp').textContent=(j.meta&&j.meta.generatedAt)?('갱신 '+j.meta.generatedAt):new Date().toLocaleTimeString('ko-KR');
     buildMonths(); fillMgr(); go();
@@ -585,9 +652,13 @@ function sample(){
       amount:(~~(Math.random()*80)+10)*100000,
       productType:prods[0],category:cats[~~(Math.random()*2)],isNewRevenue:!re});
   }
-  // 집행매출: 담당자×월 (수주와 다른 분포)
-  rawExec=[];
-  mgrs.forEach(m=>MOS.forEach(ym=>rawExec.push({manager:m,ym,amount:(~~(Math.random()*3000)+300)*10000})));
+  // 집행매출: 담당자×월 (수주와 다른 분포) + 일자별 근사
+  rawExec=[];rawExecD=[];
+  mgrs.forEach(m=>MOS.forEach(ym=>{
+    const amt=(~~(Math.random()*3000)+300)*10000;
+    rawExec.push({manager:m,ym,amount:amt});
+    const bd=bizDatesOf(ym);if(bd.length){const per=amt/bd.length;bd.forEach(ds=>rawExecD.push({manager:m,date:ds,amount:Math.round(per)}));}
+  }));
   rawA=[];
   for(let i=0;i<1600;i++){
     const m=mgrs[~~(Math.random()*8)];const ym=MOS[~~(Math.random()*MOS.length)];
@@ -643,6 +714,7 @@ function go(){
   rFc(L);
   rTable(W,mon);
   renderCompare();
+  renderProgress();
 }
 
 function bizDays(ym){
@@ -670,6 +742,135 @@ function nextM(ym){const[y,m]=ym.split('-').map(Number);return`${m===12?y+1:y}-$
 function gc(){const d=dark();return{grid:d?'#2A2A28':'#EFEFED',text:d?'#78716C':'#A8A29E',axis:d?'#E7E5E4':'#292524',bar:d?'#5C3D2C':'#D97757',line:d?'#787672':'#78716C'};}
 function prevYM(ym){const[y,m]=ym.split('-').map(Number);return `${m===1?y-1:y}-${String(m===1?12:m-1).padStart(2,'0')}`;}
 function months2026(){return MONTHS.filter(m=>m.slice(0,4)==='2026');}
+
+/* ── 영업일 / 진척 유틸 ── */
+const pad2=n=>String(n).padStart(2,'0');
+const isoOf=(y,m,d)=>`${y}-${pad2(m)}-${pad2(d)}`;
+function isBiz(y,m,d){const dow=new Date(y,m-1,d).getDay();return dow!==0&&dow!==6&&!HOLIDAYS[isoOf(y,m,d)];}
+function bizDatesOf(ym){const[y,m]=ym.split('-').map(Number);const last=new Date(y,m,0).getDate();const o=[];for(let d=1;d<=last;d++)if(isBiz(y,m,d))o.push(isoOf(y,m,d));return o;}
+function bizCountOf(ym){return bizDatesOf(ym).length;}
+// 당월이면 오늘까지 경과 영업일, 과거달이면 전체, 미래달이면 0
+function elapsedBizOf(ym){
+  const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  const dates=bizDatesOf(ym);
+  if(ym>todayYM)return 0;
+  if(ym<todayYM)return dates.length;
+  const t=`${todayYM}-${pad2(now.getDate())}`;
+  return dates.filter(d=>d<=t).length;
+}
+// 월요일 시작 주차 버킷: [{s,e}] (그 달을 덮는 월~일 주들)
+function weekBucketsOf(ym){
+  const[y,m]=ym.split('-').map(Number);const last=new Date(y,m,0).getDate();
+  const first=new Date(y,m-1,1),off=(first.getDay()+6)%7;      // 월=0
+  let cur=new Date(y,m-1,1-off);const end=new Date(y,m-1,last);const w=[];
+  while(cur<=end){const s=new Date(cur),e=new Date(cur);e.setDate(e.getDate()+6);w.push({s,e});cur=new Date(cur);cur.setDate(cur.getDate()+7);}
+  return w;
+}
+function weekIndexOf(iso,ym){const w=weekBucketsOf(ym),t=new Date(iso+'T00:00:00');for(let i=0;i<w.length;i++)if(t>=w[i].s&&t<=w[i].e)return i;return -1;}
+// 일자별 값 맵 (iso→금액). kind: 'won'(수주금액) | 'exec'(집행)
+function dailyMap(kind,mgr,ym){
+  const map={};
+  if(kind==='won'){rawW.forEach(w=>{if(mgr!=='all'&&w.manager!==mgr)return;const d=(w.wonDate||'').slice(0,10);if(d.slice(0,7)!==ym)return;map[d]=(map[d]||0)+(Number(w.amount)||0);});}
+  else{rawExecD.forEach(e=>{if(mgr!=='all'&&e.manager!==mgr)return;const d=(e.date||'').slice(0,10);if(d.slice(0,7)!==ym)return;map[d]=(map[d]||0)+(Number(e.amount)||0);});}
+  return map;
+}
+// 달력일 기준 누적(1일~말일). uptoISO 이후는 null
+function cumByCalendar(kind,mgr,ym,uptoISO){
+  const map=dailyMap(kind,mgr,ym),[y,m]=ym.split('-').map(Number),last=new Date(y,m,0).getDate();const a=[];let c=0;
+  for(let d=1;d<=last;d++){const iso=isoOf(y,m,d);c+=(map[iso]||0);a.push(uptoISO&&iso>uptoISO?null:c);}
+  return a;
+}
+// 주차별 합계
+function weekSums(kind,mgr,ym){const map=dailyMap(kind,mgr,ym),w=weekBucketsOf(ym),o=w.map(()=>0);Object.keys(map).forEach(iso=>{const i=weekIndexOf(iso,ym);if(i>=0)o[i]+=map[iso];});return o;}
+// 같은 영업일차 비교 + 월말 예상
+// (N영업일차 '날짜'까지의 전체 누적 — 그 사이 주말/공휴일에 발생한 집행도 포함)
+function paceStat(kind,mgr,curM,prvM){
+  const n=elapsedBizOf(curM);
+  const mc=dailyMap(kind,mgr,curM), mp=dailyMap(kind,mgr,prvM);
+  const bc=bizDatesOf(curM), bp=bizDatesOf(prvM);
+  const cutC=n>0?(bc[Math.min(n,bc.length)-1]||''):'';   // 당월 N영업일차 날짜
+  const cutP=n>0?(bp[Math.min(n,bp.length)-1]||''):'';   // 전월 N영업일차 날짜
+  const upto=(m,cut)=>cut?Object.keys(m).reduce((s,iso)=>s+(iso<=cut?m[iso]:0),0):0;
+  const all=m=>Object.keys(m).reduce((s,iso)=>s+m[iso],0);
+  const curNow=upto(mc,cutC), prvSame=upto(mp,cutP), prvFull=all(mp);
+  const tot=bizCountOf(curM),proj=n>0?curNow/n*tot:0;
+  return {n,tot,curNow,prvSame,prvFull,proj};
+}
+
+// 라인 차트(전월 vs 당월 누적)
+function dualLine(id,labels,prev,cur,o){
+  o=o||{};const{grid,text}=gc();const cv=document.getElementById(id);if(!cv)return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(cv,{type:'line',
+    data:{labels,datasets:[
+      {label:o.prvL||'전월',data:prev,borderColor:'#C4A08A',backgroundColor:'transparent',borderWidth:2,tension:.25,pointRadius:0,borderDash:[5,4],spanGaps:true},
+      {label:o.curL||'당월',data:cur,borderColor:'#D97757',backgroundColor:'transparent',borderWidth:2.5,tension:.25,pointRadius:0,spanGaps:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{color:text,font:{size:11},boxWidth:14,padding:12}},
+        tooltip:{callbacks:{label:ctx=>ctx.parsed.y==null?null:` ${ctx.dataset.label}: ${o.tfmt?o.tfmt(ctx.parsed.y):fmtN(ctx.parsed.y)}`}}},
+      scales:{x:{grid:{display:false},ticks:{color:text,font:{size:10},autoSkip:true,maxTicksLimit:o.xticks||11,maxRotation:0}},
+              y:{grid:{color:grid},ticks:{color:text,font:{size:10},callback:v=>o.money?v.toLocaleString():v},beginAtZero:true,grace:'8%'}}}
+  });
+}
+
+// 진척 헤드라인 KPI
+function rPaceKPI(elId,kind,mgr,curM,prvM){
+  const p=paceStat(kind,mgr,curM,prvM);
+  const d=p.prvSame>0?((p.curNow-p.prvSame)/p.prvSame*100):(p.curNow>0?100:0);
+  const up=d>=0,arrow=up?'▲':'▼',cls=up?'up':'down';
+  set(elId,`
+   <div class="pace-tile"><div class="pace-lbl">당월 ${p.n}영업일차 누적</div><div class="pace-val">${fmt(p.curNow)}</div></div>
+   <div class="pace-tile"><div class="pace-lbl">전월 동일 영업일차</div><div class="pace-val muted">${fmt(p.prvSame)}</div><div class="pace-chg ${cls}">${arrow}${Math.abs(d).toFixed(0)}%</div></div>
+   <div class="pace-tile"><div class="pace-lbl">월말 예상 (현재 페이스)</div><div class="pace-val">${fmt(p.proj)}</div><div class="pace-sub">전월 전체 ${fmt(p.prvFull)}</div></div>`);
+}
+// 일자별 누적선
+function rDailyLine(id,kind,mgr,curM,prvM){
+  const now=new Date(),todayYM=`${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  const todayISO=`${todayYM}-${pad2(now.getDate())}`;
+  const[cy,cm]=curM.split('-').map(Number),[py,pm]=prvM.split('-').map(Number);
+  const lastC=new Date(cy,cm,0).getDate(),lastP=new Date(py,pm,0).getDate(),maxD=Math.max(lastC,lastP);
+  const labels=Array.from({length:maxD},(_,i)=>`${i+1}`);
+  const prev=cumByCalendar(kind,mgr,prvM,null);
+  const cur=cumByCalendar(kind,mgr,curM,curM===todayYM?todayISO:null);
+  while(prev.length<maxD)prev.push(prev.length?prev[prev.length-1]:0);
+  while(cur.length<maxD)cur.push(null);
+  dualLine(id,labels,prev,cur,{prvL:`${pm}월`,curL:`${cm}월`,money:true,tfmt:v=>fmt(v),xticks:11});
+}
+// 주차별 막대
+function rWeekBar(id,kind,mgr,curM,prvM){
+  const cw=weekSums(kind,mgr,curM),pw=weekSums(kind,mgr,prvM),n=Math.max(cw.length,pw.length);
+  const labels=Array.from({length:n},(_,i)=>`${i+1}주차`);
+  const P=Array.from({length:n},(_,i)=>Math.round((pw[i]||0)/10000)),C=Array.from({length:n},(_,i)=>Math.round((cw[i]||0)/10000));
+  CHART_LABELS[id]={mode:'top',fmt:v=>v?v.toLocaleString():''};
+  groupBar(id,labels,[
+    {label:`${+prvM.split('-')[1]}월`,data:P,color:'#C4A08A'},
+    {label:`${+curM.split('-')[1]}월`,data:C,color:'#D97757'},
+  ],{money:true,tfmt:v=>v.toLocaleString()+'만원',padTop:26});
+}
+// 연간 영업일 캘린더
+function rBizCalendar(){
+  const{grid,text,axis}=gc();const cv=document.getElementById('bizCalC');if(!cv)return;
+  const mos=Array.from({length:12},(_,i)=>`2026-${pad2(i+1)}`);
+  const labels=mos.map(m=>`${+m.split('-')[1]}월`),biz=mos.map(bizCountOf);
+  const nowM=new Date().getMonth()+1,cols=mos.map((m,i)=>(i+1)===nowM?'#D97757':(dark()?'#5C554E':'#B8AEA4'));
+  CHART_LABELS['bizCalC']={mode:'top',fmt:v=>v};
+  if(charts['bizCalC'])charts['bizCalC'].destroy();
+  charts['bizCalC']=new Chart(cv,{type:'bar',data:{labels,datasets:[{data:biz,backgroundColor:cols,borderRadius:4,maxBarThickness:38}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` 영업일 ${ctx.parsed.y}일`}}},
+      scales:{x:{grid:{display:false},ticks:{color:axis,font:{size:11,weight:'600'}}},y:{grid:{color:grid},ticks:{color:text,font:{size:10}},beginAtZero:true,grace:'14%'}}}});
+}
+// 진척 섹션 전체
+function renderProgress(){
+  if(!window.Chart)return;
+  const mgr=document.getElementById('mgrSel').value, mon=document.getElementById('monSel').value;
+  const curM=curYMof(mon), prvM=prevYM(curM);
+  rBizCalendar();
+  set('paceCtx',`${+curM.split('-')[1]}월 ${elapsedBizOf(curM)}영업일차 / 총 ${bizCountOf(curM)}영업일 · 전월 동일 영업일차와 비교`);
+  rPaceKPI('wonPaceKPI','won',mgr,curM,prvM);  rDailyLine('wonDailyC','won',mgr,curM,prvM);  rWeekBar('wonWeekC','won',mgr,curM,prvM);
+  rPaceKPI('execPaceKPI','exec',mgr,curM,prvM); rDailyLine('execDailyC','exec',mgr,curM,prvM); rWeekBar('execWeekC','exec',mgr,curM,prvM);
+}
 
 function rSummary(L,W,A,Ae,mon,wd,mgr){
   const wAmt=W.reduce((s,w)=>s+(Number(w.amount)||0),0);
