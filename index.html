@@ -378,8 +378,13 @@ tr:hover td{background:var(--sf1);}
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 컨택 — 전월 vs 당월</span><span class="cs">막대 위 건수 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="ch"><span class="ct">영업자별 컨택 (중복포함) — 전월 vs 당월</span><span class="cs">전체 컨택 건수 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
         <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContC"></canvas></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">영업자별 컨택 (유니크 기업) — 전월 vs 당월</span><span class="cs">기업 단위 중복 제거 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpContUniqC"></canvas></div></div>
       </div>
 
     </div>
@@ -443,22 +448,14 @@ tr:hover td{background:var(--sf1);}
         </div>
       </div>
 
-      <!-- 객단가 + 포캐스팅 -->
-      <div class="g2">
-        <div class="card">
-          <div class="ch"><span class="ct">평균 객단가</span><span class="cs">수주금액 ÷ 수주건수</span></div>
-          <div class="cb">
-            <div class="unit-row" id="unitRow" style="margin-top:0;"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90%</span></div>
-          <div class="cb">
-            <div class="fc-list" id="fcList"><div class="ld"><div class="spin"></div></div></div>
-            <div class="fc-total" id="fcTot" style="display:none;">
-              <span class="fc-tlbl">합산 예상 매출</span>
-              <span class="fc-tval" id="fcV">—</span>
-            </div>
+      <!-- 파이프라인 포캐스팅 -->
+      <div class="card">
+        <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90% · 6월 이후 전환 리드만</span></div>
+        <div class="cb">
+          <div class="fc-list" id="fcList"><div class="ld"><div class="spin"></div></div></div>
+          <div class="fc-total" id="fcTot" style="display:none;">
+            <span class="fc-tlbl">합산 예상 매출</span>
+            <span class="fc-tval" id="fcV">—</span>
           </div>
         </div>
       </div>
@@ -469,13 +466,13 @@ tr:hover td{background:var(--sf1);}
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 수주건수 — 전월 vs 당월</span><span class="cs">상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
-        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
+        <div class="ch"><span class="ct">영업자별 집행금액 — 전월 vs 당월</span><span class="cs">인식기준 집행매출 · 단위: 만원 · 상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpExecC"></canvas></div></div>
       </div>
 
       <div class="card">
-        <div class="ch"><span class="ct">영업자별 평균 객단가 — 전월 vs 당월</span><span class="cs">수주금액 ÷ 수주건수 · 단위: 만원 · 상단 전월 대비 증감(▲/▼)</span></div>
-        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpUnitC"></canvas></div></div>
+        <div class="ch"><span class="ct">영업자별 수주건수 — 전월 vs 당월</span><span class="cs">상단 전월 대비 증감(▲/▼) · 막대 클릭 시 필터</span></div>
+        <div class="cb"><div class="chart-wrap h300"><canvas id="cmpWonNRC"></canvas></div></div>
       </div>
 
     </div>
@@ -509,6 +506,7 @@ tr:hover td{background:var(--sf1);}
 // ★ 배포한 Apps Script 웹앱 주소(.../exec)로 교체하세요
 const GAS='https://script.google.com/macros/s/AKfycbypQoXlkv7F9753BvSZkYb715Tm6L6XZ_fv1L0pBb3_JpNvGjKYYjMceJA0ro4P_0n2ew/exec';
 let AVG_PRICE=4619685; // 로드 시 실데이터 평균 객단가로 갱신
+const MIN_YM='2026-06'; // 이 월부터만 노출(과거 데이터 제외)
 let rawL=[],rawW=[],rawA=[],rawExec=[],MONTHS=[],charts={},thisW=[],otherW=[],folded=true;
 
 const dark=()=>document.documentElement.classList.contains('dark');
@@ -549,7 +547,7 @@ function buildMonths(){
   rawW.forEach(w=>w.wonYM&&s.add(w.wonYM));
   rawExec.forEach(e=>e.ym&&s.add(e.ym));
   rawA.forEach(a=>a.actYM&&s.add(a.actYM));
-  MONTHS=[...s].sort();
+  MONTHS=[...s].filter(m=>m>=MIN_YM).sort();   // 6월부터만
   const sel=document.getElementById('monSel'),cur=sel.value;
   sel.innerHTML='';
   MONTHS.forEach(ym=>{const[y,m]=ym.split('-');const o=document.createElement('option');o.value=ym;o.textContent=`${y}년 ${+m}월`;sel.appendChild(o);});
@@ -573,7 +571,9 @@ function sample(){
       const re=Math.random()>.6;const cid='C'+String(~~(Math.random()*600)+1).padStart(4,'0');
       rawL.push({manager:m,contractType:re?'재구매':'신규',companyId:cid,
         category:re?cats[~~(Math.random()*2)]:'',
-        activityStatus:stats[wr(sw)],contactStatus:Math.random()>.45?'컨택 완료':'컨택 필요'});
+        activityStatus:stats[wr(sw)],contactStatus:Math.random()>.45?'컨택 완료':'컨택 필요',
+        expectedRevenue:(~~(Math.random()*60)+10)*100000,
+        lastStageDate:`2026-0${6+(~~(Math.random()*2))}-15`});
     }
   });
   rawW=[];
@@ -640,7 +640,6 @@ function go(){
   rDonut('catC','catL',W,'category',['채용','비채용'],['#D97757','#78716C']);
   rDonut('prodC','prodL',W,'productType',['광고','공고'],['#D97757','#78716C']);
   rConv(W,A,Ae);
-  rUnit(W);
   rFc(L);
   rTable(W,mon);
   renderCompare();
@@ -915,8 +914,11 @@ function rUnit(W){
 }
 
 function rFc(L){
-  const q=L.filter(l=>['견적발송','제안발송'].includes(l.activityStatus));
-  const e=L.filter(l=>l.activityStatus==='구매예정');
+  // 최근 전환일이 6월 이후인 리드만(전환일 공백 또는 6월 이전은 제외)
+  const fresh=l=>{const d=(l.lastStageDate||'').slice(0,7);return d&&d>=MIN_YM;};
+  const F=L.filter(fresh);
+  const q=F.filter(l=>['견적발송','제안발송'].includes(l.activityStatus));
+  const e=F.filter(l=>l.activityStatus==='구매예정');
   // 각 리드의 견적금액(expectedRevenue) 사용, 없으면 평균 객단가로 보정
   const amt=l=>Number(l.expectedRevenue)>0?Number(l.expectedRevenue):AVG_PRICE;
   const sumE=arr=>arr.reduce((s,l)=>s+amt(l),0);
@@ -1216,21 +1218,25 @@ function renderCompare(){
     ],{money:o.money,tfmt:o.tfmt,padTop:32,footer:o.footer});
   };
 
-  // 컨택: 전월 vs 당월 총 컨택
+  // 컨택(중복포함): 전월 vs 당월
   mom('cmpContC', s=>s.contacts, {tfmt:v=>fmtN(v)+'건',
-    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmtN(s.cur.contacts)}건(유니크 ${fmtN(s.cur.contactsUniq)}) · 전월 ${fmtN(s.prev.contacts)}건`;}});
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmtN(s.cur.contacts)}건 · 전월 ${fmtN(s.prev.contacts)}건`;}});
+
+  // 컨택(유니크 기업): 전월 vs 당월
+  mom('cmpContUniqC', s=>s.contactsUniq, {tfmt:v=>fmtN(v)+'개사',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmtN(s.cur.contactsUniq)}개사 · 전월 ${fmtN(s.prev.contactsUniq)}개사`;}});
 
   // 수주금액: 전월 vs 당월
   mom('cmpWonC', s=>s.wonAmt, {money:true,disp:v=>Math.round(v/10000),lfmt:v=>v.toLocaleString(),tfmt:v=>v.toLocaleString()+'만원',
     footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmt(s.cur.wonAmt)} · 전월 ${fmt(s.prev.wonAmt)}`;}});
 
+  // 집행금액(인식기준): 전월 vs 당월
+  mom('cmpExecC', s=>s.exec, {money:true,disp:v=>Math.round(v/10000),lfmt:v=>v.toLocaleString(),tfmt:v=>v.toLocaleString()+'만원',
+    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmt(s.cur.exec)} · 전월 ${fmt(s.prev.exec)}`;}});
+
   // 수주건수: 전월 vs 당월
   mom('cmpWonNRC', s=>s.wonCnt, {tfmt:v=>v+'건',
     footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${s.cur.wonCnt}건 · 전월 ${s.prev.wonCnt}건`;}});
-
-  // 객단가: 전월 vs 당월
-  mom('cmpUnitC', s=>s.avgPrice, {money:true,disp:v=>Math.round(v/10000),lfmt:v=>v.toLocaleString(),tfmt:v=>v.toLocaleString()+'만원',
-    footer:items=>{const s=stats[items[0].dataIndex];return `당월 ${fmt(s.cur.avgPrice)} · 전월 ${fmt(s.prev.avgPrice)}`;}});
 }
 
 function selectManager(m){
