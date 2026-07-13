@@ -543,7 +543,7 @@ tr:hover td{background:var(--sf1);}
         <div class="sec-line"></div>
       </div>
       <div class="card">
-        <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90% · 6월 이후 전환 리드만</span></div>
+        <div class="ch"><span class="ct">파이프라인 포캐스팅</span><span class="cs">견적발송 60% · 구매예정 90% · 현재 활동상태 기준</span></div>
         <div class="cb">
           <div class="fc-list" id="fcList"><div class="ld"><div class="spin"></div></div></div>
           <div class="fc-total" id="fcTot" style="display:none;">
@@ -974,8 +974,8 @@ function rLeadTree(L){
 }
 
 function rStatus(L){
-  const stats=['콜드액션','웜리드','제안발송','견적발송','구매예정','보류','재시도'];
-  const ops=[0.3,0.42,0.6,0.72,0.85,0.35,0.4];
+  const stats=['콜드액션','통화예약','웜리드','제안발송','견적발송','구매예정','보류','재시도'];
+  const ops=[0.3,0.38,0.46,0.6,0.72,0.85,0.35,0.4];
   const cnts=stats.map(s=>L.filter(l=>l.activityStatus===s).length);
   const max=Math.max(...cnts,1);
   set('sSub',`전체 ${fmtN(L.length)}개`);
@@ -1187,11 +1187,10 @@ function rUnit(W){
 }
 
 function rFc(L){
-  // 최근 전환일이 6월 이후인 리드만(전환일 공백 또는 6월 이전은 제외)
-  const fresh=l=>{const d=(l.lastStageDate||'').slice(0,7);return d&&d>=MIN_YM;};
-  const F=L.filter(fresh);
-  const q=F.filter(l=>['견적발송','제안발송'].includes(l.activityStatus));
-  const e=F.filter(l=>l.activityStatus==='구매예정');
+  // 현재 활동상태 기준: 견적발송/구매예정에 '지금' 머물러 있으면 모두 포함(전환일 필터 없음).
+  // 포캐스팅에서 빼려면 CRM에서 해당 리드의 활동상태를 바꾸면 됨.
+  const q=L.filter(l=>l.activityStatus==='견적발송');
+  const e=L.filter(l=>l.activityStatus==='구매예정');
   // 각 리드의 견적금액(expectedRevenue) 사용, 없으면 평균 객단가로 보정
   const amt=l=>Number(l.expectedRevenue)>0?Number(l.expectedRevenue):AVG_PRICE;
   const sumE=arr=>arr.reduce((s,l)=>s+amt(l),0);
